@@ -19,6 +19,7 @@
 
     <!-- Custom styles for this template-->
     <link href="css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
     <!-- evitar overflow del logo -->
       <style>
         /* Forzar color del sidebar a #2c657fff */
@@ -80,7 +81,7 @@
 
 			<?php if (isset($_SESSION['datos_usuario']) && $_SESSION['datos_usuario']->getNombreRol() === 'asegurado'): ?>
 					<li class="nav-item active">
-						<a class="nav-link" href="index.php?vista=polizasCliente.php">
+						<a class="nav-link" href="index.php?vista=polizasCliente">
 							<i class="fas fa-fw fa-file-alt"></i>
 							<span>Mis Pólizas</span></a>
 					</li>
@@ -149,18 +150,25 @@
 			                    <span>Estadisticas</span></a>
 			            </li>                
             <li class="nav-item">
-                <a class="nav-link" href="index.php?vista=reportesAdmin.php">
+                <a class="nav-link" href="index.php?vista=reportesAdmin">
                     <i class="fas fa-fw fa-file-alt"></i>
                     <span>Reportes</span></a>
             </li>
 
 			<li class="nav-item">
-				<a class="nav-link" href="index.php?vista=gestionCliente.php">
+				<a class="nav-link" href="index.php?vista=gestionCliente">
 					<!-- icono: clientes -->
 					<i class="fas fa-fw fa-users"></i>
 					<span>Clientes</span>
 				</a>
 			</li>
+
+			<li class="nav-item">
+                <a class="nav-link" href="index.php?vista=gestionAgente">
+                    <i class="fas fa-fw fa-user-tie"></i>
+                    <span>Agentes</span>
+                </a>
+            </li>
 			<?php endif; ?>
 
 			<?php if (isset($_SESSION['datos_usuario']) && $_SESSION['datos_usuario']->getNombreRol() === 'agente'): ?>
@@ -173,7 +181,7 @@
 			</li>
 
 			<li class="nav-item">
-				<a class="nav-link" href="index.php?vista=gestionCliente.php">
+				<a class="nav-link" href="index.php?vista=gestionCliente">
 					<!-- icono: clientes -->
 					<i class="fas fa-fw fa-users"></i>
 					<span>Clientes</span>
@@ -181,7 +189,7 @@
 			</li>
 
 			<li class="nav-item">
-				<a class="nav-link" href="index.php?vista=reportesAgente.php">
+				<a class="nav-link" href="index.php?vista=reportesAgente">
 					<!-- icono: reportes -->
 					<i class="fas fa-fw fa-file-alt"></i>
 					<span>Reportes</span>
@@ -191,13 +199,13 @@
 
 			<?php if (isset($_SESSION['datos_usuario']) && $_SESSION['datos_usuario']->getNombreRol() === 'asegurado'): ?>
 			 <li class="nav-item">
-                <a class="nav-link" href="index.php?vista=documentacionCliente.php">
+                <a class="nav-link" href="index.php?vista=documentacionCliente">
                     <i class="fas fa-fw fa-folder-open"></i>
                     <span>Documentación</span></a>
             </li>
 
             <li class="nav-item">
-                <a class="nav-link" href="index.php?vista=solicitudCliente.php">
+                <a class="nav-link" href="index.php?vista=solicitudCliente">
                     <i class="fas fa-fw fa-paper-plane"></i>
                     <span>Solicitudes</span></a>
             </li>

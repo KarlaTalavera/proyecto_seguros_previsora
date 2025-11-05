@@ -134,4 +134,30 @@ class modeloUsuario {
         // Si el usuario no existe o la contraseña es incorrecta
         return false;
     }
+
+    // ====================================================================
+    // --- MÉTODOS DE GESTIÓN DE USUARIOS (CRUD) ---
+    // ====================================================================
+
+    /**
+     * Obtiene todos los usuarios de la base de datos con su respectivo rol.
+     * @return array|false Un array de arrays asociativos con los datos de los usuarios, o false si hay un error.
+     */
+    public function obtenerTodosLosUsuarios() {
+        if (!$this->db) {
+            error_log("Error: Conexión a DB no inicializada en el Modelo.");
+            return false;
+        }
+
+        $sql = "SELECT u.*, r.nombre_rol as rol FROM usuario u JOIN rol r ON u.id_rol = r.id_rol ORDER BY u.apellido, u.nombre";
+
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Error de DB al obtener todos los usuarios: " . $e->getMessage());
+            return false;
+        }
+    }
 }

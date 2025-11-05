@@ -36,7 +36,7 @@
                 <div class="modal-body">select
                 <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
-                    <a class="btn btn-primary" href="login.php">Cerrar sesión</a>
+                    <a class="btn btn-primary" href="logout.php">Cerrar sesión</a>
                 </div>
             </div>
         </div>
@@ -53,7 +53,7 @@
     <script src="js/sb-admin-2.min.js"></script>
 
     <!-- Page level plugins -->
-    <script src="../vendor/chart.js/Chart.min.js"></script>
+    <script src="vendor/chart.js/Chart.min.js"></script>
 
     <!-- Page level custom scripts -->
     <script src="js/demo/chart-area-demo.js"></script>
