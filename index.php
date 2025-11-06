@@ -8,7 +8,7 @@ require_once 'config/conexion.php';
 // Asumo que controladorUsuario o bien modeloUsuario.php contienen la clase
 // Si modeloUsuario está en la carpeta 'modelo/', lo incluimos explícitamente:
 require_once 'modelo/modeloUsuario.php'; 
-require_once 'controlador/controladorUsuario.php';
+
 
 
 session_start();

@@ -16,30 +16,30 @@ require_once __DIR__ . '/parte_superior.php';
   <div class="row">
     <div class="col-md-3 mb-3">
       <div class="card shadow-sm border-0 p-3">
-        <div class="small text-muted">Primas Vendidas</div>
-        <h3>$45,000</h3>
-        <div class="progress mt-2" style="height:6px"><div class="progress-bar bg-success" style="width:60%"></div></div>
+        <div class="small text-muted">Pólizas</div>
+        <h3 id="kpi_polizas">—</h3>
+        <div class="small text-muted">Total de pólizas registradas por usted</div>
       </div>
     </div>
     <div class="col-md-3 mb-3">
       <div class="card shadow-sm border-0 p-3">
-        <div class="small text-muted">Comisiones Pendientes</div>
-        <h3>$4,200</h3>
-        <div class="progress mt-2" style="height:6px"><div class="progress-bar bg-warning" style="width:35%"></div></div>
+        <div class="small text-muted">Prima Suscrita</div>
+        <h3 id="kpi_prima">—</h3>
+        <div class="small text-muted">Suma de primas asociadas a sus pólizas</div>
       </div>
     </div>
     <div class="col-md-3 mb-3">
       <div class="card shadow-sm border-0 p-3">
-        <div class="small text-muted">Tasa de Renovación</div>
-        <h3>66%</h3>
-        <div class="progress mt-2" style="height:6px"><div class="progress-bar bg-info" style="width:66%"></div></div>
+  <div class="small text-muted">Cuotas Vencidas</div>
+  <h3 id="kpi_cartera">—</h3>
+  <div class="small text-muted">Monto vencido de cuotas asignado a sus pólizas</div>
       </div>
     </div>
     <div class="col-md-3 mb-3">
       <div class="card shadow-sm border-0 p-3">
-        <div class="small text-muted">Cotizaciones</div>
-        <h3>12</h3>
-        <div class="progress mt-2" style="height:6px"><div class="progress-bar bg-primary" style="width:40%"></div></div>
+        <div class="small text-muted">Nuevas (12m)</div>
+        <h3 id="kpi_nuevas">—</h3>
+        <div class="small text-muted">Pólizas nuevas en los últimos 12 meses</div>
       </div>
     </div>
   </div>
@@ -50,52 +50,168 @@ require_once __DIR__ . '/parte_superior.php';
         <h6>Ventas vs Meta (últimos 6 meses)</h6>
         <canvas id="ventasMeta" height="150"></canvas>
       </div>
-      <div class="card p-3 mt-3">
-        <h6>Polizas por tipo de cliente</h6>
-        <canvas id="polizasPorCliente" height="150"></canvas>
+      <div class="card p-3 mt-3 text-center">
+        <h6>Pólizas por tipo de cliente (Natural vs Jurídico)</h6>
+        <div style="max-width:300px;margin:0 auto;">
+          <canvas id="polizasPorCliente" height="120" style="display:block;margin:0 auto;max-width:300px;"></canvas>
+        </div>
       </div>
     </div>
 
     <div class="col-lg-5">
       <div class="card p-3">
         <h6>Últimas Cotizaciones / Pólizas</h6>
-        <table id="recentSales" class="table table-sm table-striped w-100">
-          <thead><tr><th>ID</th><th>Producto</th><th>Cliente</th><th>Estado</th></tr></thead>
-          <tbody>
-            <tr><td>Q-1001</td><td>RCV</td><td>María López</td><td><span class="badge badge-success">Aceptada</span></td></tr>
-            <tr><td>P-2005</td><td>Combinado Residencial</td><td>Empresa XYZ</td><td><span class="badge badge-warning">Pendiente</span></td></tr>
-            <tr><td>Q-1008</td><td>Automóvil</td><td>Carlos Pérez</td><td><span class="badge badge-secondary">Rechazada</span></td></tr>
-            <tr><td>P-2010</td><td>RCV</td><td>Ana Ruiz</td><td><span class="badge badge-success">Activa</span></td></tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-sm" id="polizasVencerTableAgent">
+            <thead><tr><th>#</th><th>Póliza</th><th>Agente</th><th>Vence</th><th>Prima</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card p-3 mt-3">
+        <h6>Siniestros gestionados (últimos 12 meses)</h6>
+        <canvas id="siniestrosGestionados" height="140"></canvas>
       </div>
     </div>
   </div>
 </div>
 
 <?php
+$agentCedula = isset($_SESSION['datos_usuario']) ? $_SESSION['datos_usuario']->getCedula() : '';
+
 $extra_scripts = <<<EOT
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script>
 \$(function(){
-  if (\$.fn.DataTable) {\$('#recentSales').DataTable({ pageLength:5, lengthChange:false });}
-  const ctx = document.getElementById('ventasMeta').getContext('2d');
-  new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: ['May','Jun','Jul','Aug','Sep','Oct'],
-      datasets: [{label:'Ventas', data:[8,12,15,10,20,18], borderColor:'#1f3b73', backgroundColor:'rgba(31,59,115,0.08)', tension:0.3},
-                 {label:'Meta', data:[12,12,12,12,12,12], borderColor:'#6c757d', borderDash:[5,5], fill:false}]
-    },
-    options:{plugins:{legend:{position:'bottom'}}}
+  console.log('estadisticasAgente: extra scripts loaded');
+  // We'll initialize DataTable after we populate rows so it renders correctly.
+  // Los gráficos se dibujan únicamente si las peticiones R4/R8 devuelven datos. Evitamos mostrar datos demo.
+  const palette = ['#d3b8ff','#a98fff','#7e61ff','#513dff','#2d1aff'];
+  
+  // Cargar reportes: R1 (recientes), tipo cliente, ventas por mes y KPIs del agente
+  // include agent cedula explicitly to ensure backend filters correctly even if session parsing fails in AJAX
+  $.getJSON('controlador/controladorReporte.php', { accion: 'r1', dias: 30, cedula_agente: '$agentCedula' }, function(res){
+    const table = $('#polizasVencerTableAgent');
+    const tbody = table.find('tbody');
+    // Clear any existing DataTable instance so we can repopulate safely
+    if ($.fn.DataTable && $.fn.DataTable.isDataTable(table)) {
+      table.DataTable().clear().destroy();
+    }
+    tbody.empty();
+    if (res.success && res.data && res.data.length) {
+      res.data.forEach(function(row, idx){
+        const agente = (row.nombre_agente ? (row.nombre_agente + ' ' + row.apellido_agente) : (row.cedula_agente||'') );
+        tbody.append('<tr><td>' + (idx+1) + '</td><td>' + (row.numero_poliza||'') + '</td><td>' + agente + '</td><td>' + (row.fecha_fin||'') + '</td><td>' + (row.monto_prima||'') + '</td></tr>');
+      });
+    } else {
+      console.debug('R1 response', res);
+      tbody.append('<tr><td colspan="5" class="text-center text-muted">No hay cotizaciones/pólizas recientes.</td></tr>');
+    }
+    // Initialize DataTable after rows are present
+    if ($.fn.DataTable) {
+      table.DataTable({ pageLength:5, lengthChange:false });
+    }
+  }).fail(function(){
+    const table = $('#polizasVencerTableAgent');
+    if ($.fn.DataTable && $.fn.DataTable.isDataTable(table)) { table.DataTable().clear().destroy(); }
+    table.find('tbody').empty().append('<tr><td colspan="5" class="text-center text-danger">Error cargando recientes.</td></tr>');
+    if ($.fn.DataTable) { table.DataTable({ pageLength:5, lengthChange:false }); }
   });
-  new Chart(document.getElementById('polizasPorCliente'), {
-    type:'doughnut',
-    data:{labels:['Individual','Pyme','Corporativo'], datasets:[{data:[55,30,15], backgroundColor:['#7aa2d6','#28a745','#c79f2a']}]},
-    options:{plugins:{legend:{position:'bottom'}}}
+  // Tipo de cliente (natural vs juridico) para este agente
+  $.getJSON('controlador/controladorReporte.php', { accion: 'r_tipo_cliente' }, function(res){
+    if (res.success && res.data) {
+      const rows = res.data;
+      if (!rows.length) {
+        $('#polizasPorCliente').parent().append('<div class="text-center text-muted small mt-2">No hay datos.</div>');
+        return;
+      }
+      const labels = rows.map(r => r.tipo_cliente);
+      const values = rows.map(r => parseInt(r.total||0));
+      new Chart(document.getElementById('polizasPorCliente'), {
+        type: 'doughnut',
+        data: { labels: labels, datasets:[{data: values, backgroundColor:[palette[1], palette[3]]}] },
+        options: { plugins:{legend:{position:'bottom'}} }
+      });
+    } else {
+      $('#polizasPorCliente').parent().append('<div class="text-center text-muted small mt-2">No hay datos de clientes.</div>');
+    }
+  }).fail(function(){
+    $('#polizasPorCliente').parent().append('<div class="text-center text-danger small mt-2">Error cargando clientes.</div>');
   });
+
+  // Ventas por mes (agent) -> mostrar ventas vs meta (meta = avg * 1.2 si hay historial)
+  $.getJSON('controlador/controladorReporte.php', { accion: 'r_agente_ventas', months: 6 }, function(res){
+    if (res.success && res.data && res.data.labels) {
+      const labels = res.data.labels;
+      const sales = res.data.data.map(v => parseFloat(v||0));
+      const avg = sales.length ? (sales.reduce((a,b)=>a+b,0)/sales.length) : 0;
+      const metaVal = Math.round(avg * 1.2) || 1000; // si no hay datos, usar 1000 como referencia
+      const meta = labels.map(()=>metaVal);
+      new Chart(document.getElementById('ventasMeta'), {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: 'Ventas', data: sales, backgroundColor: palette[4] },
+            { label: 'Meta', data: meta, type: 'line', borderColor: palette[2], borderWidth:2, fill:false, tension:0.2 }
+          ]
+        },
+        options: { plugins:{legend:{position:'bottom'}}, scales:{y:{beginAtZero:true}} }
+      });
+    } else {
+      $('#ventasMeta').parent().append('<div class="text-center text-muted small mt-2">No hay datos de ventas.</div>');
+    }
+  }).fail(function(){
+    $('#ventasMeta').parent().append('<div class="text-center text-danger small mt-2">Error cargando ventas.</div>');
+  });
+
+  // KPIs del agente
+  $.getJSON('controlador/controladorReporte.php', { accion: 'kpis_agente' }, function(res){
+    if (res.success && res.data) {
+      const d = res.data;
+      $('#kpi_polizas').text(d.polizas_count||0);
+      $('#kpi_prima').text(new Intl.NumberFormat('es-BO',{style:'currency',currency:'USD',maximumFractionDigits:2}).format(d.prima_suscrita||0));
+      $('#kpi_cartera').text(new Intl.NumberFormat('es-BO',{style:'currency',currency:'USD',maximumFractionDigits:2}).format(d.cartera_pendiente||0));
+      $('#kpi_nuevas').text(d.nuevas_12m||0);
+    }
+  }).fail(function(){
+    // silencioso: dejar los placeholders
+  });
+
+  // Siniestros gestionados por el agente (tendencia)
+  $.getJSON('controlador/controladorReporte.php', { accion: 'r_siniestros', months: 12 }, function(res){
+    if (res.success && res.data && res.data.labels) {
+      const labels = res.data.labels;
+      const values = res.data.data.map(v => parseInt(v||0));
+      const ctx = document.getElementById('siniestrosGestionados').getContext('2d');
+      const grad = ctx.createLinearGradient(0,0,0,140);
+      grad.addColorStop(0, 'rgba(125,81,255,0.45)');
+      grad.addColorStop(1, 'rgba(125,81,255,0.05)');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Siniestros',
+            data: values,
+            backgroundColor: grad,
+            borderColor: palette[2],
+            fill: true,
+            tension: 0.3,
+            pointRadius: 3
+          }]
+        },
+        options: {
+          plugins: { legend: { display: false } },
+          scales: { y: { beginAtZero: true, precision:0 } }
+        }
+      });
+    } else {
+      $('#siniestrosGestionados').parent().append('<div class="text-center text-muted small mt-2">No hay datos de siniestros.</div>');
+    }
+  }).fail(function(){
+    $('#siniestrosGestionados').parent().append('<div class="text-center text-danger small mt-2">Error cargando siniestros.</div>');
+  });
+
 });
 </script>
 EOT;

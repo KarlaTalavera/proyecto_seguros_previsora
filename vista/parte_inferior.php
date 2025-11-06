@@ -33,7 +33,7 @@
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
-                <div class="modal-body">select
+                <div class="modal-body">¿Desea cerrar sesión?</div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
                     <a class="btn btn-primary" href="logout.php">Cerrar sesión</a>
@@ -58,6 +58,13 @@
     <!-- Page level custom scripts -->
     <script src="js/demo/chart-area-demo.js"></script>
     <script src="js/demo/chart-pie-demo.js"></script>
+
+    <?php
+    // Si la vista definió scripts extra en la variable $extra_scripts, imprimirlos aquí.
+    if (isset($extra_scripts) && is_string($extra_scripts)) {
+        echo $extra_scripts;
+    }
+    ?>
 
 </body>
 

@@ -1,92 +1,55 @@
 <?php
-// Asegúrate de que las rutas sean correctas
-require_once dirname(__DIR__) . '/modelo/modeloUsuario.php'; 
+// Controlador procedural estilo API para acciones sobre usuario (crear, listar, login minimal)
+require_once dirname(__DIR__) . '/modelo/modeloUsuario.php';
 
-/**
- * Clase que maneja la lógica de las peticiones relacionadas con el Usuario (Login, Logout, etc.).
- */
-class ControladorUsuario {
-    private $modeloUsuario;
+// Devolver JSON
+header('Content-Type: application/json');
 
-    public function __construct() {
-        // Iniciar la sesión para poder guardar los datos del usuario
-        if (session_status() == PHP_SESSION_NONE) {
-            session_start();
-        }
-        $this->modeloUsuario = new UserModel();
-    }
+$modelo = new modeloUsuario();
+$accion = $_REQUEST['accion'] ?? '';
+$respuesta = ['success' => false, 'message' => 'Acción no válida.'];
 
-    /**
-     * Muestra la vista del formulario de inicio de sesión.
-     */
-    public function mostrarInicioSesion() {
-        // Lógica para cargar el HTML/Template del formulario de login
-        // require 'views/formulario_inicio_sesion.php'; 
-        echo "<h1>Formulario de Inicio de Sesión</h1><p>Implementar aquí la lógica de la Vista (HTML).</p>";
-    }
+switch ($accion) {
+    case 'crear_usuario':
+        // Esperamos POST
+        $cedula = trim($_POST['cedula'] ?? '');
+        $nombre = trim($_POST['nombre'] ?? '');
+        $apellido = trim($_POST['apellido'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $telefono = trim($_POST['telefono'] ?? '');
+        $password = $_POST['password'] ?? null; // opcional
 
-    /**
-     * Procesa la solicitud POST del formulario de inicio de sesión.
-     */
-    public function manejarInicioSesion() {
-        // 1. Recibir y validar datos
-        $identificador = $_POST['identificador'] ?? ''; // Cédula o Email
-        $clave = $_POST['password'] ?? '';
+        $data = [
+            'cedula' => $cedula,
+            'nombre' => $nombre,
+            'apellido' => $apellido,
+            'email' => $email,
+            'telefono' => $telefono,
+            'password' => $password,
+            'id_rol' => 2 // agente por defecto
+        ];
 
-        if (empty($identificador) || empty($clave)) {
-            $_SESSION['error'] = "Por favor, complete todos los campos.";
-            // header('Location: index.php?controlador=usuario&accion=mostrarFormularioInicioSesion');
-            echo "<p style='color:red;'>Error: Por favor, complete todos los campos.</p>";
-            return;
-        }
-
-        // 2. Llamar al Modelo para autenticar. Retorna un objeto Usuario o false.
-        $usuario = $this->modeloUsuario->login($identificador, $clave);
-
-        if ($usuario) {
-            // 3. Autenticación exitosa: Guardar datos en la sesión
-            $_SESSION['usuario_conectado'] = true;
-            
-            // Guardamos el objeto Usuario en la sesión para acceso futuro
-            $_SESSION['datos_usuario'] = $usuario; 
-            
-            // Redirigir según el rol del usuario, usando el getter
-            switch ($usuario->getNombreRol()) { 
-                case 'administrador':
-                    $urlRedireccion = 'index.php?controlador=panel&accion=admin';
-                    break;
-                case 'agente':
-                    $urlRedireccion = 'index.php?controlador=panel&accion=agente';
-                    break;
-                case 'asegurado':
-                    $urlRedireccion = 'index.php?controlador=panel&accion=cliente';
-                    break;
-                default:
-                    $urlRedireccion = 'index.php?controlador=inicio';
-                    break;
-            }
-            
-            // Redirección simulada
-            // header("Location: " . $urlRedireccion);
-            echo "<h2>¡Inicio de Sesión Exitoso!</h2>";
-            echo "<pre>Bienvenido, {$usuario->getNombre()} ({$usuario->getNombreRol()}). Redirigiendo a: {$urlRedireccion}</pre>";
-            
+        $result = $modelo->crearUsuario($data);
+        if (is_array($result) && ($result['success'] ?? false)) {
+            $respuesta = ['success' => true, 'message' => $result['message'], 'password' => $result['password'] ?? null];
         } else {
-            // 4. Autenticación fallida
-            $_SESSION['error'] = "Cédula/Email o Contraseña incorrectos.";
-            // header('Location: index.php?controlador=usuario&accion=mostrarFormularioInicioSesion');
-            echo "<p style='color:red;'>Error: Cédula/Email o Contraseña incorrectos.</p>";
+            $mensaje = is_array($result) ? ($result['message'] ?? 'Error') : 'Error al crear usuario';
+            $respuesta = ['success' => false, 'message' => $mensaje];
         }
-    }
-    
-    /**
-     * Cierra la sesión del usuario.
-     */
-    public function cerrarSesion() {
-        session_destroy();
-        // Redirigir al formulario de inicio de sesión
-        // header('Location: index.php?controlador=usuario&accion=mostrarFormularioInicioSesion');
-        echo "<h2>Sesión Cerrada.</h2>";
-    }
+        break;
+
+    case 'obtener_usuarios':
+        $usuarios = $modelo->obtenerTodosLosUsuarios();
+        if ($usuarios !== false) {
+            $respuesta = ['success' => true, 'usuarios' => $usuarios];
+        } else {
+            $respuesta = ['success' => false, 'message' => 'Error al obtener usuarios'];
+        }
+        break;
+
+    default:
+        $respuesta = ['success' => false, 'message' => 'Acción no reconocida.'];
 }
+
+echo json_encode($respuesta);
 ?>

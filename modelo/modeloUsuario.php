@@ -160,4 +160,133 @@ class modeloUsuario {
             return false;
         }
     }
+
+    /**
+     * Verifica si una cédula ya existe en la tabla usuario.
+     * @param string $cedula
+     * @return bool
+     */
+    public function existeCedula(string $cedula) {
+        if (!$this->db) return false;
+        $sql = "SELECT COUNT(*) FROM usuario WHERE cedula = :cedula";
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':cedula', $cedula);
+            $stmt->execute();
+            return $stmt->fetchColumn() > 0;
+        } catch (\PDOException $e) {
+            error_log("Error DB existeCedula: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Verifica si un email ya existe en la tabla usuario.
+     * @param string $email
+     * @return bool
+     */
+    public function existeEmail(string $email) {
+        if (!$this->db) return false;
+        $sql = "SELECT COUNT(*) FROM usuario WHERE email = :email";
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':email', $email);
+            $stmt->execute();
+            return $stmt->fetchColumn() > 0;
+        } catch (\PDOException $e) {
+            error_log("Error DB existeEmail: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Valida el formato de la cédula según prefijos esperados.
+     * - Personas: V12345678 (V + 7-8 dígitos)
+     * - Empresas / entidades / extranjeros: J, G, E, EM seguidos de 7-8 dígitos y un guion con dígito de chequeo: J12345678-9
+     * @param string $cedula
+     * @return bool
+     */
+    public function validarFormatoCedula(string $cedula) {
+        $ced = strtoupper(trim($cedula));
+        // Personas (V)
+        if (preg_match('/^V\d{7,8}$/i', $ced)) {
+            return true;
+        }
+        // Entidades: J, G, E, EM con dígito verificador separado por guion
+        if (preg_match('/^(J|G|E|EM)\d{7,8}-\d{1}$/i', $ced)) {
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Crea un nuevo usuario en la base de datos.
+     * @param array $data (cedula, nombre, apellido, email, password, telefono, id_rol)
+     * @return array ['success' => bool, 'message' => string]
+     */
+    public function crearUsuario(array $data) {
+        if (!$this->db) {
+            return ['success' => false, 'message' => 'Conexión a la base de datos no disponible.'];
+        }
+
+        $cedula = $data['cedula'] ?? '';
+        $email = $data['email'] ?? '';
+        $nombre = $data['nombre'] ?? '';
+        $apellido = $data['apellido'] ?? '';
+        $password = $data['password'] ?? null;
+        $telefono = $data['telefono'] ?? null;
+        $id_rol = $data['id_rol'] ?? 2; // por defecto agente
+
+        // Validaciones simples
+        if (empty($cedula) || empty($nombre) || empty($apellido) || empty($email)) {
+            return ['success' => false, 'message' => 'Faltan campos obligatorios.'];
+        }
+
+        // Validar formato de cédula según reglas de la aseguradora
+        if (!$this->validarFormatoCedula($cedula)) {
+            return ['success' => false, 'message' => 'Formato de cédula inválido. Ejemplos válidos: V12345678 o J12345678-9'];
+        }
+
+        // Validar email
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            return ['success' => false, 'message' => 'Formato de correo electrónico inválido.'];
+        }
+
+        // Unicidad
+        if ($this->existeCedula($cedula)) {
+            return ['success' => false, 'message' => 'La cédula ya está registrada.'];
+        }
+        if ($this->existeEmail($email)) {
+            return ['success' => false, 'message' => 'El correo electrónico ya está registrado.'];
+        }
+
+        // Validar password si fue provisto
+        if (!empty($password) && strlen($password) < 8) {
+            return ['success' => false, 'message' => 'La contraseña debe tener al menos 8 caracteres.'];
+        }
+
+        // Hash de contraseña: si no se provee, generamos una contraseña aleatoria
+        if (empty($password)) {
+            $password = bin2hex(random_bytes(4)); // 8 hex chars
+        }
+        $password_hash = password_hash($password, PASSWORD_DEFAULT);
+
+        $sql = "INSERT INTO usuario (cedula, nombre, apellido, email, password_hash, telefono, id_rol) VALUES (:cedula, :nombre, :apellido, :email, :password_hash, :telefono, :id_rol)";
+
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':cedula', $cedula);
+            $stmt->bindParam(':nombre', $nombre);
+            $stmt->bindParam(':apellido', $apellido);
+            $stmt->bindParam(':email', $email);
+            $stmt->bindParam(':password_hash', $password_hash);
+            $stmt->bindParam(':telefono', $telefono);
+            $stmt->bindParam(':id_rol', $id_rol);
+            $stmt->execute();
+            return ['success' => true, 'message' => 'Usuario creado correctamente.', 'password' => $password];
+        } catch (\PDOException $e) {
+            error_log("Error de DB al crear usuario: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error al insertar en la base de datos.'];
+        }
+    }
 }

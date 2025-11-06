@@ -46,6 +46,21 @@ if (is_array($todos_los_usuarios)) {
     font-weight: 500;
   }
 
+  /* Hacer que el modal de "Registrar Nuevo Agente" use los mismos estilos que el de permisos */
+  #modalNuevoAgente .modal-content {
+    border-radius: 1rem;
+    overflow: hidden;
+  }
+  #modalNuevoAgente .modal-header {
+    background-color: var(--perm-modal-header-bg);
+    color: var(--perm-modal-header-color);
+    border-bottom: none;
+  }
+  #modalNuevoAgente .modal-header .close {
+    color: var(--perm-modal-header-color);
+    opacity: 0.8;
+  }
+
   .perm-group-card {
      border: 1px solid #ccc; /* Borde sutil para las tarjetas */
   }
@@ -103,61 +118,69 @@ if (is_array($todos_los_usuarios)) {
 
 .button {
   position: relative;
-  width: 150px;
-  height: 45px;
+  width: auto;
+  min-width: 220px; /* asegurar espacio para texto largo */
+  height: 40px;
   cursor: pointer;
   display: flex;
   align-items: center;
-  border: 1px solid #34974d;
-  background-color: #3aa856;
+  border: 1px solid #007bff;
+  background-color: #007bff; /* azul */
+  padding: 0 56px 0 14px; /* reservar espacio a la derecha igual al ancho del icono */
+  overflow: hidden;
+  border-radius: 0; /* bordes cuadrados */
 }
 
 .button, .button__icon, .button__text {
-  transition: all 0.3s;
+  transition: all 0.28s ease;
 }
 
 .button .button__text {
-
-  transform: translateX(30px);
   color: #fff;
   font-weight: 600;
+  white-space: nowrap;
+  margin-left: 6px; /* separa el texto del borde izquierdo */
+  transition: color 0.28s ease;
 }
 
 .button .button__icon {
   position: absolute;
-  transform: translateX(109px);
+  right: 0;
+  top: 0;
   height: 100%;
-  width: 39px;
-  background-color: #34974d;
+  width: 48px;
+  background-color: #0069d9; /* tono más oscuro para el icono */
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: width 0.28s ease, background-color 0.18s ease;
 }
 
 .button .svg {
-  width: 30px;
+  width: 20px;
   stroke: #fff;
 }
 
 .button:hover {
-  background: #34974d;
+  background: #0069d9; /* hover azul oscuro */
 }
 
+/* En hover el icono se expande hacia la izquierda cubriendo el texto (comportamiento original) */
 .button:hover .button__text {
   color: transparent;
 }
 
 .button:hover .button__icon {
-  width: 150px;
-  transform: translateX(0);
+  width: 100%;
+  right: 0; /* mantener el ancla a la derecha para que la expansión ocurra hacia la izquierda */
 }
 
 .button:active .button__icon {
-  background-color: #2e8644;
+  background-color: #0056b3; /* más oscuro al hacer click */
 }
 
 .button:active {
-  border: 1px solid #2e8644;
+  border: 1px solid #0056b3;
 }
 </style>
 
@@ -165,7 +188,7 @@ if (is_array($todos_los_usuarios)) {
 <div class="container-fluid">
   <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <h1 class="h3 mb-0 text-gray-800">Gestión de Agentes</h1>
-    <button type="button" class="button">
+    <button type="button" class="button" data-toggle="modal" data-target="#modalNuevoAgente">
   <span class="button__text">Registrar Nuevo Agente</span>
   <span class="button__icon"><svg xmlns="http://www.w3.org/2000/svg" width="24" viewBox="0 0 24 24" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" stroke="currentColor" height="24" fill="none" class="svg"><line y2="19" y1="5" x2="12" x1="12"></line><line y2="12" y1="12" x2="19" x1="5"></line></svg></span>
 </button>
@@ -222,6 +245,7 @@ if (is_array($todos_los_usuarios)) {
       <div class="modal-body">
         <form id="permisosForm">
           <input type="hidden" id="cedulaAgentePermisos" name="cedula_agente">
+          <div id="listaPermisos" class="container-fluid">
             <!-- Checkboxes se cargarán aquí dinámicamente -->
           </div>
         </form>
@@ -236,20 +260,72 @@ if (is_array($todos_los_usuarios)) {
 
 <!-- NEW: Modal Registrar Nuevo Agente -->
 <div class="modal fade" id="modalNuevoAgente" tabindex="-1" role="dialog" aria-labelledby="modalLabelNuevoAgente" aria-hidden="true">
-  <div class="modal-dialog" role="document">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
     <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="modalLabelNuevoAgente">Registrar Nuevo Agente</h5>
-        <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-      </div>
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalLabelNuevoAgente">Registrar Nuevo Agente</h5>
+          <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        </div>
       <div class="modal-body">
-        <p>Aquí irá el formulario para un nuevo agente.</p>
-        <!-- Próximamente: campos para cédula, nombre, apellido, email, etc. -->
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
-        <button id="btnGuardarAgente" class="btn btn-primary">Guardar</button>
-      </div>
+            <form id="nuevoAgenteForm" novalidate>
+              <div class="form-row">
+                <div class="form-group col-md-6">
+                  <label for="agenteCedula">Cédula <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-id-card"></i></span></div>
+                    <input type="text" class="form-control" id="agenteCedula" name="cedula" required placeholder="V12345678">
+                  </div>
+                  <div class="invalid-feedback">Cédula requerida (ej: V12345678).</div>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="agenteTelefono">Teléfono <span class="text-danger">*</span></label>
+                  <div class="input-group">
+                    <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-phone"></i></span></div>
+                    <input type="text" class="form-control" id="agenteTelefono" name="telefono" required placeholder="0414xxxxxxx">
+                  </div>
+                  <div class="invalid-feedback">Teléfono requerido.</div>
+                </div>
+              </div>
+              <div class="form-row">
+                <div class="form-group col-md-6">
+                  <label for="agenteNombre">Nombre <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="agenteNombre" name="nombre" required placeholder="Nombre">
+                  <div class="invalid-feedback">Nombre requerido.</div>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="agenteApellido">Apellido <span class="text-danger">*</span></label>
+                  <input type="text" class="form-control" id="agenteApellido" name="apellido" required placeholder="Apellido">
+                  <div class="invalid-feedback">Apellido requerido.</div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label for="agenteEmail">Email <span class="text-danger">*</span></label>
+                <div class="input-group">
+                  <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-envelope"></i></span></div>
+                  <input type="email" class="form-control" id="agenteEmail" name="email" required placeholder="correo@dominio.tld">
+                </div>
+                <div class="invalid-feedback">Email válido requerido.</div>
+              </div>
+              <div class="form-row">
+                <div class="form-group col-md-6">
+                  <label for="agentePassword">Contraseña <span class="text-danger">*</span></label>
+                  <input type="password" class="form-control" id="agentePassword" name="password" required placeholder="Mínimo 8 caracteres">
+                  <small class="form-text text-muted">La contraseña debe tener al menos 8 caracteres.</small>
+                  <div class="invalid-feedback">Contraseña requerida (mínimo 8 caracteres).</div>
+                </div>
+                <div class="form-group col-md-6">
+                  <label for="agentePasswordConfirm">Confirmar Contraseña <span class="text-danger">*</span></label>
+                  <input type="password" class="form-control" id="agentePasswordConfirm" required placeholder="Repita la contraseña">
+                  <div class="invalid-feedback">Las contraseñas deben coincidir.</div>
+                </div>
+              </div>
+            </form>
+            <div id="respuestaCrearAgente" style="display:none;" class="mt-2"></div>
+          </div>
+          <div class="modal-footer">
+            <button class="neu-button" type="button" data-dismiss="modal">Cancelar</button>
+            <button id="btnGuardarAgente" class="neu-button">Crear Agente</button>
+          </div>
     </div>
   </div>
 </div>
@@ -387,6 +463,77 @@ $(document).ready(function() {
       },
       complete: function() {
         boton.prop('disabled', false).text('Guardar Cambios');
+      }
+    });
+  });
+  
+  // --- LÓGICA PARA CREAR NUEVO AGENTE ---
+  $('#btnGuardarAgente').on('click', function() {
+    const form = $('#nuevoAgenteForm');
+    const boton = $(this);
+    $('#respuestaCrearAgente').hide().html('');
+    boton.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Guardando...');
+
+    // Client-side validations antes de enviar
+    const cedula = $('#agenteCedula').val().trim();
+    const nombre = $('#agenteNombre').val().trim();
+    const apellido = $('#agenteApellido').val().trim();
+    const email = $('#agenteEmail').val().trim();
+    const password = $('#agentePassword').val() || '';
+    const passwordConfirm = $('#agentePasswordConfirm').val() || '';
+    const telefono = $('#agenteTelefono').val().trim();
+
+    // Patterns: V + 7-8 digitos; or (J|G|E|EM) + 7-8 digitos + - + dijito de chekeo
+    const rePersona = /^V\d{7,8}$/i;
+    const reEntidad = /^(J|G|E|EM)\d{7,8}-\d{1}$/i;
+    const reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const reTelefono = /^[0-9\-\s\+]{7,20}$/;
+
+    // Required fields validation
+    if (!cedula) { showCreateError('Complete la cédula.'); return; }
+    if (!nombre) { showCreateError('Complete el nombre.'); return; }
+    if (!apellido) { showCreateError('Complete el apellido.'); return; }
+    if (!email) { showCreateError('Complete el email.'); return; }
+    if (!telefono) { showCreateError('Complete el teléfono.'); return; }
+
+    if (!(rePersona.test(cedula) || reEntidad.test(cedula))) { showCreateError('Formato de cédula inválido. Ej: V12345678 o J12345678-9'); return; }
+    if (!reEmail.test(email)) { showCreateError('Email inválido.'); return; }
+    if (!reTelefono.test(telefono)) { showCreateError('Teléfono inválido.'); return; }
+
+    // Password rules: required and match
+    if (!password || password.length < 8) { showCreateError('La contraseña debe tener al menos 8 caracteres.'); return; }
+    if (password !== passwordConfirm) { showCreateError('Las contraseñas no coinciden.'); return; }
+
+    function showCreateError(msg) {
+      $('#respuestaCrearAgente').show().html('<div class="alert alert-danger">' + msg + '</div>');
+      boton.prop('disabled', false).text('Crear Agente');
+    }
+
+    // Enviar si todo ok
+    $.ajax({
+      url: 'controlador/controladorUsuario.php',
+      type: 'POST',
+      data: form.serialize() + '&accion=crear_usuario',
+      dataType: 'json',
+      success: function(res) {
+        if (res.success) {
+          $('#modalNuevoAgente').modal('hide');
+          let msg = res.message || 'Agente creado correctamente.';
+          if (res.password) {
+            msg += '\nContraseña generada: ' + res.password;
+          }
+          alert(msg);
+          // Recargar la página para actualizar la tabla (fácil y seguro)
+          location.reload();
+        } else {
+          $('#respuestaCrearAgente').show().html('<div class="alert alert-danger">' + (res.message || 'Error al crear agente') + '</div>');
+        }
+      },
+      error: function() {
+        $('#respuestaCrearAgente').show().html('<div class="alert alert-danger">Error de conexión al servidor.</div>');
+      },
+      complete: function() {
+        boton.prop('disabled', false).text('Guardar');
       }
     });
   });
