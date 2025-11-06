@@ -289,4 +289,76 @@ class modeloUsuario {
             return ['success' => false, 'message' => 'Error al insertar en la base de datos.'];
         }
     }
+        public function obtenerUsuarioPorCedula(string $cedula) {
+        if (!$this->db) return false;
+
+        // Se asume que 'rol' es una columna en 'usuario' o que se hace un JOIN a la tabla 'rol'
+        $sql = "SELECT u.cedula, u.nombre, u.apellido, u.email, u.telefono, r.nombre_rol AS rol
+                FROM usuario u
+                JOIN rol r ON u.id_rol = r.id_rol
+                WHERE u.cedula = :cedula";
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':cedula', $cedula);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Error de DB al obtener usuario por cédula: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Actualiza los datos de un usuario/agente, incluyendo la opción de cambiar la contraseña.
+     */
+    public function actualizarUsuario(string $cedula_original, string $cedula, string $nombre, string $apellido, string $email, string $telefono, string $password = null) {
+        if (!$this->db) {
+            return ['success' => false, 'message' => 'Error de conexión a la base de datos.'];
+        }
+
+        $sql = "UPDATE usuario SET cedula = :cedula, nombre = :nombre, apellido = :apellido, email = :email, telefono = :telefono";
+        $params = [
+            ':cedula' => $cedula,
+            ':nombre' => $nombre,
+            ':apellido' => $apellido,
+            ':email' => $email,
+            ':telefono' => $telefono,
+            ':cedula_original' => $cedula_original
+        ];
+
+        // Si se proporciona una nueva contraseña, la incluimos en la consulta
+        if (!empty($password)) {
+            if (strlen($password) < 8) {
+                return ['success' => false, 'message' => 'La nueva contraseña debe tener al menos 8 caracteres.'];
+            }
+            $password_hash = password_hash($password, PASSWORD_DEFAULT);
+            $sql .= ", password_hash = :password_hash";
+            $params[':password_hash'] = $password_hash;
+        }
+        
+        $sql .= " WHERE cedula = :cedula_original";
+
+        try {
+            $stmt = $this->db->prepare($sql);
+            
+            // Bind de parámetros
+            foreach ($params as $key => &$value) {
+                $stmt->bindParam($key, $value);
+            }
+            
+            $stmt->execute();
+
+            if ($stmt->rowCount() > 0) {
+                return ['success' => true, 'message' => 'Agente actualizado correctamente.'];
+            } else {
+                // Esto puede ser porque no hubo cambios o la cédula_original no existe
+                return ['success' => false, 'message' => 'No se realizaron cambios o la cédula original no fue encontrada.'];
+            }
+        } catch (\PDOException $e) {
+            // En caso de error, p. ej. cédula duplicada (si se permitiera editar la cédula)
+            $msg = "Error de DB al actualizar usuario: " . $e->getMessage();
+            error_log($msg);
+            return ['success' => false, 'message' => 'Error al actualizar: ' . (strpos($e->getMessage(), 'Duplicate entry') !== false ? 'La cédula o email ya existen.' : 'Error interno.')];
+        }
+    }
 }

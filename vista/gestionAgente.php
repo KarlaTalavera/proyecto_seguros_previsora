@@ -215,7 +215,15 @@ if (is_array($todos_los_usuarios)) {
                 <td><?php echo htmlspecialchars($agente['email']); ?></td>
                 <td><?php echo htmlspecialchars($agente['telefono']); ?></td>
                 <td>
-                  <button class="btn btn-sm btn-primary" title="Editar Agente">Editar</button>
+                  <button class="btn btn-sm btn-primary editAgentBtn" 
+                          data-cedula="<?php echo htmlspecialchars($agente['cedula']); ?>"
+                          data-nombre="<?php echo htmlspecialchars($agente['nombre']); ?>"
+                          data-apellido="<?php echo htmlspecialchars($agente['apellido']); ?>"
+                          data-email="<?php echo htmlspecialchars($agente['email']); ?>"
+                          data-telefono="<?php echo htmlspecialchars($agente['telefono']); ?>"
+                          data-toggle="modal" 
+                          data-target="#modalEditarAgente"
+                          title="Editar Agente">Editar</button>
                   <button class="btn btn-sm btn-danger" title="Eliminar Agente">Eliminar</button>
                   <button class="btn btn-sm btn-info managePermsBtn" 
                           data-cedula="<?php echo htmlspecialchars($agente['cedula']); ?>" 
@@ -328,6 +336,81 @@ if (is_array($todos_los_usuarios)) {
           </div>
     </div>
   </div>
+</div>
+
+<div class="modal fade" id="modalEditarAgente" tabindex="-1" role="dialog" aria-labelledby="modalLabelEditarAgente" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalLabelEditarAgente">Editar Agente: </h5>
+                <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            </div>
+            <div class="modal-body">
+                <form id="editarAgenteForm" novalidate>
+                    <input type="hidden" id="editCedulaOriginal" name="cedula_original"> 
+                    
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="editAgenteCedula">Cédula <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-id-card"></i></span></div>
+                                <input type="text" class="form-control" id="editAgenteCedula" name="cedula" required readonly> 
+                            </div>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="editAgenteTelefono">Teléfono <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-phone"></i></span></div>
+                                <input type="text" class="form-control" id="editAgenteTelefono" name="telefono" required placeholder="0414xxxxxxx">
+                            </div>
+                            <div class="invalid-feedback">Teléfono requerido.</div>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="editAgenteNombre">Nombre <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="editAgenteNombre" name="nombre" required placeholder="Nombre">
+                            <div class="invalid-feedback">Nombre requerido.</div>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="editAgenteApellido">Apellido <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="editAgenteApellido" name="apellido" required placeholder="Apellido">
+                            <div class="invalid-feedback">Apellido requerido.</div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="editAgenteEmail">Email <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <div class="input-group-prepend"><span class="input-group-text"><i class="fas fa-envelope"></i></span></div>
+                            <input type="email" class="form-control" id="editAgenteEmail" name="email" required placeholder="correo@dominio.tld">
+                        </div>
+                        <div class="invalid-feedback">Email válido requerido.</div>
+                    </div>
+                    <div class="alert alert-info" role="alert">
+                      Deje los campos de contraseña en blanco si no desea cambiarlos.
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="editAgentePassword">Nueva Contraseña</label>
+                            <input type="password" class="form-control" id="editAgentePassword" name="password" placeholder="Mínimo 8 caracteres">
+                            <small class="form-text text-muted">Mínimo 8 caracteres si se provee.</small>
+                            <div class="invalid-feedback">Contraseña debe tener al menos 8 caracteres.</div>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="editAgentePasswordConfirm">Confirmar Nueva Contraseña</label>
+                            <input type="password" class="form-control" id="editAgentePasswordConfirm" placeholder="Repita la contraseña">
+                            <div class="invalid-feedback">Las contraseñas deben coincidir.</div>
+                        </div>
+                    </div>
+                </form>
+                <div id="respuestaEditarAgente" style="display:none;" class="mt-2"></div>
+            </div>
+            <div class="modal-footer">
+                <button class="neu-button" type="button" data-dismiss="modal">Cancelar</button>
+                <button id="btnActualizarAgente" class="neu-button">Guardar Cambios</button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <?php
@@ -536,6 +619,35 @@ $(document).ready(function() {
         boton.prop('disabled', false).text('Guardar');
       }
     });
+  });
+    $(document).on('click', '.editAgentBtn', function() {
+      const btn = $(this);
+      const cedula = btn.data('cedula');
+      const nombre = btn.data('nombre');
+      const apellido = btn.data('apellido');
+      const email = btn.data('email');
+      const telefono = btn.data('telefono');
+
+      // 1. Rellenar el título del modal
+      $('#agenteNombreEditar').text(nombre + ' ' + apellido);
+
+      // 2. Rellenar los campos del formulario
+      $('#editCedulaOriginal').val(cedula); 
+      $('#editAgenteCedula').val(cedula); 
+      $('#editAgenteNombre').val(nombre);
+      $('#editAgenteApellido').val(apellido);
+      $('#editAgenteEmail').val(email);
+      $('#editAgenteTelefono').val(telefono);
+      
+      // 3. Limpiar campos de contraseña y mensajes
+      $('#editAgentePassword').val('');
+      $('#editAgentePasswordConfirm').val('');
+      $('#respuestaEditarAgente').hide().html('');
+      
+      // 4. Limpiar posibles estados de validación
+      $('#editarAgenteForm').removeClass('was-validated');
+
+      // El modal se abrirá automáticamente debido al data-toggle en el botón
   });
 });
 </script>

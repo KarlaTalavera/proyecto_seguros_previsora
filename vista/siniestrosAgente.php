@@ -1,10 +1,17 @@
 <?php
 require_once dirname(__DIR__) . '/modelo/modeloUsuario.php';
+require_once dirname(__DIR__) . '/modelo/modeloSiniestro.php';
+
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 require_once __DIR__ . '/parte_superior.php';
+
+$modeloSiniestro = new ModeloSiniestro();
+
 ?>
+
+
 
 <div class="container-fluid">
   <div class="d-flex justify-content-between mb-3">
