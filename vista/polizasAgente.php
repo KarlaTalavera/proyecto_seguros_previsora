@@ -7,7 +7,8 @@ if (session_status() == PHP_SESSION_NONE) {
 require_once __DIR__ . '/parte_superior.php';
 
 $modeloPoliza = new ModeloPoliza();
-$cedula_agente = $_SESSION['agente_cedula'] ?? 'V-12345678'; 
+// Se cambia la cédula de prueba a una existente en la BD para ver resultados
+$cedula_agente = $_SESSION['agente_cedula'] ?? 'V12345678'; 
 $polizas = $modeloPoliza->obtenerPolizasDeAgente($cedula_agente) ?: [];
 ?>
 
@@ -15,7 +16,7 @@ $polizas = $modeloPoliza->obtenerPolizasDeAgente($cedula_agente) ?: [];
   <div class="d-flex justify-content-between mb-3">
     <h3>Mi Cartera de Pólizas</h3> <div>
       <button class="btn btn-secondary mr-2" id="exportCsv">Exportar CSV</button>
-      <button class="btn btn-primary" data-toggle="modal" data-target="#cotizacionModal">Crear Cotización</button>
+      <button class="btn btn-primary" data-toggle="modal" data-target="#cotizacionModal">Crear Póliza</button>
     </div>
   </div>
 
@@ -29,8 +30,9 @@ $polizas = $modeloPoliza->obtenerPolizasDeAgente($cedula_agente) ?: [];
         <?php if (!empty($polizas)): ?>
           <?php foreach ($polizas as $poliza): 
               $badge_class = match ($poliza['estado']) {
-                  'Activa' => 'badge-success',
-                  'Vencida' => 'badge-danger',
+                  'ACTIVA' => 'badge-success',
+                  'VENCER' => 'badge-warning',
+                  'PENDIENTE' => 'badge-info',
                   default => 'badge-warning', 
               };
               $estado_html = '<span class="badge ' . $badge_class . '">' . htmlspecialchars($poliza['estado']) . '</span>';
@@ -53,7 +55,6 @@ $polizas = $modeloPoliza->obtenerPolizasDeAgente($cedula_agente) ?: [];
     </table>
   </div>
 </div>
-<!-- Modal Cotización (sin cambios funcionales) -->
 <div class="modal fade" id="cotizacionModal">
     <div class="modal-dialog modal-lg modal-dialog-centered"> <div class="modal-content">
             <div class="modal-header">
@@ -116,13 +117,14 @@ $polizas = $modeloPoliza->obtenerPolizasDeAgente($cedula_agente) ?: [];
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button id="savePoliza" type="submit" class="btn btn-success">Guardar Póliza</button>
+                <button id="savePoliza" type="button" class="btn btn-success">Guardar Póliza</button>
                 
             </div>
         </div>
     </div>
 </div>
 <?php
+// Se añade el script de manejo de formulario AJAX al final.
 $extra_scripts = <<<EOT
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
@@ -142,6 +144,44 @@ $extra_scripts = <<<EOT
         }
     });
   }
+
+  // Lógica para Guardar la Póliza con AJAX
+  \$('#savePoliza').on('click', function(e) {
+      e.preventDefault();
+      
+      var form = \$('#crearPolizaForm');
+      var data = form.serialize() + '&accion=crear_poliza'; // Serializa los campos y añade la acción
+      
+      // Validación simple de campos requeridos antes de enviar
+      if (!form[0].checkValidity()) {
+          form[0].reportValidity();
+          return;
+      }
+
+      \$.ajax({
+          url: 'controlador/controladorPoliza.php', // Ruta al controlador
+          type: 'POST',
+          data: data,
+          dataType: 'json',
+          beforeSend: function() {
+              \$('#savePoliza').text('Guardando...').prop('disabled', true);
+          },
+          success: function(response) {
+              if (response.success) {
+                  alert('✅ Éxito: ' + response.message);
+                  \$('#cotizacionModal').modal('hide');
+                  window.location.reload(); // Recargar la tabla para mostrar la nueva póliza
+              } else {
+                  alert('❌ Error: ' + response.message);
+                  \$('#savePoliza').text('Guardar Póliza').prop('disabled', false);
+              }
+          },
+          error: function(jqXHR, textStatus, errorThrown) {
+              alert('❌ Error de comunicación con el servidor: ' + textStatus);
+              \$('#savePoliza').text('Guardar Póliza').prop('disabled', false);
+          }
+      });
+  });
 });
 </script>
 EOT;
