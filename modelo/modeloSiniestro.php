@@ -134,6 +134,16 @@ class ModeloSiniestro {
             return false;
         }
     }
+
+    public function Conexion_Base_Datos(array $data = null) {
+        try {
+            $base_datos = new Base_Datos();
+            $this->db = $base_datos->Conexion_Base_Datos(); // <-- Uso del método de tu archivo
+        } catch (\Exception $e) {
+            error_log('Error inicializando DB en modeloUsuario: ' . $e->getMessage());
+            $this->db = null;
+        }
+    }
 }
 ?>
 

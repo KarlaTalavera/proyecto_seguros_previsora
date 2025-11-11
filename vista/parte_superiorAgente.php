@@ -1,3 +1,15 @@
+<?php
+// Lógica de sesión y carga de modelo
+if (session_status() == PHP_SESSION_NONE) { session_start(); }
+require_once dirname(__DIR__) . '/modelo/modeloUsuario.php';
+
+$modeloUsuario = new modeloUsuario();
+$cedula_agente = $_SESSION['agente_cedula'] ?? 'V-12345678'; // Valor por defecto
+$agente_data = $modeloUsuario->obtenerAgenteLoggeado($cedula_agente);
+$nombre_agente = $agente_data ? htmlspecialchars($agente_data['nombre'] . ' ' . $agente_data['apellido']) : 'Usuario Desconocido';
+$rol_agente = $agente_data ? htmlspecialchars($agente_data['nombre_rol']) : 'Rol Desconocido'; // CLAVE: Obtiene el rol
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 

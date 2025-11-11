@@ -217,13 +217,13 @@ if (is_array($todos_los_usuarios)) {
                 <td>
                   <button class="btn btn-sm btn-primary editAgentBtn" 
                           data-cedula="<?php echo htmlspecialchars($agente['cedula']); ?>"
-                          data-nombre="<?php echo htmlspecialchars($agente['nombre']); ?>"
-                          data-apellido="<?php echo htmlspecialchars($agente['apellido']); ?>"
-                          data-email="<?php echo htmlspecialchars($agente['email']); ?>"
-                          data-telefono="<?php echo htmlspecialchars($agente['telefono']); ?>"
-                          data-toggle="modal" 
-                          data-target="#modalEditarAgente"
-                          title="Editar Agente">Editar</button>
+                             data-nombre="<?php echo htmlspecialchars($agente['nombre']); ?>"
+                             data-apellido="<?php echo htmlspecialchars($agente['apellido']); ?>"
+                             data-email="<?php echo htmlspecialchars($agente['email']); ?>"
+                             data-telefono="<?php echo htmlspecialchars($agente['telefono']); ?>"
+                             data-toggle="modal" 
+                             data-target="#modalEditarAgente"
+                             title="Editar Agente">Editar</button>
                   <button class="btn btn-sm btn-danger" title="Eliminar Agente">Eliminar</button>
                   <button class="btn btn-sm btn-info managePermsBtn" 
                           data-cedula="<?php echo htmlspecialchars($agente['cedula']); ?>" 

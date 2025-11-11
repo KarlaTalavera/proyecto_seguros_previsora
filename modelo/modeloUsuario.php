@@ -361,4 +361,36 @@ class modeloUsuario {
             return ['success' => false, 'message' => 'Error al actualizar: ' . (strpos($e->getMessage(), 'Duplicate entry') !== false ? 'La cédula o email ya existen.' : 'Error interno.')];
         }
     }
+
+    public function obtenerAgenteLoggeado(string $cedula_agente): array|false {
+        if (!$this->db) return false;
+
+        // CONSULTA CLAVE: JOIN con la tabla 'rol'
+        $sql = "SELECT u.cedula, u.nombre, u.apellido, u.email, u.telefono, r.nombre AS nombre_rol 
+                FROM usuario u 
+                JOIN rol r ON u.id_rol = r.id_rol 
+                WHERE u.cedula = :cedula"; 
+
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':cedula', $cedula_agente);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Error de DB al obtener agente loggeado: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    public function Conexion_Base_Datos(array $data = null) {
+        try {
+            $base_datos = new Base_Datos();
+            $this->db = $base_datos->Conexion_Base_Datos(); // <-- Uso del método de tu archivo
+        } catch (\Exception $e) {
+            error_log('Error inicializando DB en modeloUsuario: ' . $e->getMessage());
+            $this->db = null;
+        }
+    }
+
+
 }
