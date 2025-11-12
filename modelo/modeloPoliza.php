@@ -47,7 +47,75 @@ class ModeloPoliza {
             return false;
         }
     }
-    
+
+    public function obtenerPolizaPorId(int $id_poliza) {
+        if (!$this->db) return false;
+
+        $sql = "SELECT p.numero_poliza, p.estado, 
+                CONCAT(u_cliente.nombre, ' ', u_cliente.apellido) AS nombre_cliente, 
+                u_cliente.cedula AS cedula_cliente,
+                dp.fecha_fin AS fecha_vencimiento, 
+                dp.monto_prima AS prima_anual
+                FROM poliza p
+                JOIN cliente c ON p.id_cliente = c.id_cliente
+                -- CORRECCIÓN CLAVE: Cambiar c.cedula_cliente por c.cedula_asegurado
+                JOIN usuario u_cliente ON c.cedula_asegurado = u_cliente.cedula
+                JOIN detalle_poliza dp ON p.id_poliza = dp.id_poliza
+                WHERE p.id_poliza = :id_poliza";
+
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':id_poliza', $id_poliza, PDO::PARAM_INT);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Error de DB al obtener póliza por ID: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Actualiza los datos de la póliza y sus detalles (cotización y estado).
+     */
+    public function actualizarPoliza(array $data, int $id_poliza) {
+        if (!$this->db) return ['success' => false, 'message' => 'Error de conexión a la base de datos.'];
+        
+        // Iniciamos la transacción para asegurar la integridad de los datos
+        $this->db->beginTransaction();
+
+        try {
+            // 1. Actualizar la tabla `poliza` (numero_poliza y estado)
+            $sql_poliza = "UPDATE poliza SET numero_poliza = :numero_poliza, estado = :estado 
+                        WHERE id_poliza = :id_poliza";
+            $stmt_poliza = $this->db->prepare($sql_poliza);
+            $estado_db = strtoupper($data['estado']); // Guardar en mayúsculas
+
+            $stmt_poliza->bindParam(':numero_poliza', $data['numero_poliza']);
+            $stmt_poliza->bindParam(':estado', $estado_db); 
+            $stmt_poliza->bindParam(':id_poliza', $id_poliza, PDO::PARAM_INT);
+            $stmt_poliza->execute();
+            
+            // 2. Actualizar la tabla `detalle_poliza` (fecha_vencimiento y prima_anual)
+            $sql_detalle = "UPDATE detalle_poliza SET fecha_fin = :fecha_fin, monto_prima = :monto_prima 
+                            WHERE id_poliza = :id_poliza";
+            $stmt_detalle = $this->db->prepare($sql_detalle);
+            
+            $stmt_detalle->bindParam(':fecha_fin', $data['fecha_vencimiento']);
+            $stmt_detalle->bindParam(':monto_prima', $data['prima_anual']); 
+            $stmt_detalle->bindParam(':id_poliza', $id_poliza, PDO::PARAM_INT);
+            $stmt_detalle->execute();
+            
+            // Si todo va bien, confirmamos los cambios
+            $this->db->commit();
+            return ['success' => true, 'message' => 'Póliza actualizada exitosamente.'];
+
+        } catch (\PDOException $e) {
+            // Si algo falla, revertimos los cambios
+            $this->db->rollBack();
+            error_log("Error de DB al actualizar póliza ID: $id_poliza. Mensaje: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error de base de datos al guardar los cambios.'];
+        }
+    }
     /**
      * Limpia y estandariza la cédula para la búsqueda en la base de datos.
      */

@@ -17,13 +17,15 @@ $cedula_agente = $_SESSION['agente_cedula'] ?? 'V-12345678';
 
 switch ($accion) {
     case 'obtener_tipos_poliza':
-        // Carga la lista de productos/tipos de póliza
-// ... (resto del código se mantiene igual)
-
+        $tipos_poliza = $modeloPoliza->obtenerTiposPoliza();
+        if ($tipos_poliza !== false) {
+            $respuesta = ['success' => true, 'tipos_poliza' => $tipos_poliza];
+        } else {
+            $respuesta['message'] = 'Error al consultar la base de datos.';
+        }
+        break;
     case 'crear_poliza':
-        // Lógica para crear una nueva póliza (POST)
-        // La validación ahora solo verifica que el método sea POST, 
-        // ya que $cedula_agente ya tiene un valor por defecto.
+    
         if ($_SERVER['REQUEST_METHOD'] !== 'POST' || !$cedula_agente) { 
              $respuesta['message'] = 'Acceso denegado o sesión no válida.';
              break;
@@ -48,8 +50,57 @@ switch ($accion) {
         }
         break;
 
+   case 'obtener_poliza':
+        // CASO 1: CARGAR DATOS PARA EDICIÓN (Llamado desde JavaScript con el ID)
+        $id_poliza = (int)($_GET['id_poliza'] ?? 0);
+        if ($id_poliza > 0) {
+            $poliza = $modeloPoliza->obtenerPolizaPorId($id_poliza);
+            if ($poliza) {
+                // CLAVE: Mapear el estado de la BD (ACTIVA/PENDIENTE) al valor del <select> (Activa/Pendiente)
+                $poliza['estado'] = ($poliza['estado'] === 'ACTIVA') ? 'Activa' : 'Pendiente'; 
+                $respuesta = ['success' => true, 'data' => $poliza, 'message' => 'Póliza cargada exitosamente.'];
+            } else {
+                $respuesta['message'] = 'Póliza no encontrada.';
+            }
+        } else {
+            $respuesta['message'] = 'ID de póliza inválido.';
+        }
+        break;
+
+    // 💡 CASO 2: ACTUALIZAR DATOS DE LA PÓLIZA (POST)
+    case 'actualizar_poliza':
+        // CASO 2: GUARDAR DATOS MODIFICADOS (Recibe los datos del formulario)
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+             $respuesta['message'] = 'Acceso denegado o método no permitido.';
+             break;
+        }
+
+        $id_poliza = (int)($_POST['id_poliza_edicion'] ?? 0);
+        
+        if ($id_poliza === 0) {
+            $respuesta['message'] = 'ID de póliza para edición no proporcionado.';
+            break;
+        }
+
+        $data = [
+            'numero_poliza' => $_POST['numero_poliza'] ?? '',
+            'fecha_vencimiento' => $_POST['fecha_vencimiento'] ?? '',
+            'prima_anual' => $_POST['prima_anual'] ?? 0, 
+            'estado' => $_POST['estado'] ?? 'Activa',
+        ];
+
+        // Se llama al nuevo método de actualización del Modelo
+        $resultado = $modeloPoliza->actualizarPoliza($data, $id_poliza);
+        
+        if ($resultado['success'] ?? false) {
+             $respuesta = ['success' => true, 'message' => 'Póliza actualizada exitosamente.'];
+        } else {
+            $respuesta['message'] = $resultado['message'] ?? 'Error desconocido al actualizar la póliza.';
+        }
+        break;
+
     default:
-        // Acción no manejada
+        // ... (código default)
         break;
 }
 

@@ -46,7 +46,12 @@ $polizas = $modeloPoliza->obtenerPolizasDeAgente($cedula_agente) ?: [];
                   <td><?php echo $prima_formato; ?></td>
                   <td><?php echo $estado_html; ?></td>
                   <td>
-                      <button class="btn btn-sm btn-outline-primary" data-action="editar" data-id="<?php echo $poliza['id']; ?>">Editar</button>
+                      <button class="btn btn-sm btn-info btn-edit-poliza" 
+                              data-id="<?= htmlspecialchars($poliza['id']) ?>" 
+                              data-toggle="modal" 
+                              data-target="#edicionPolizaModal"  title="Editar Póliza">
+                          <i class="fas fa-edit"></i>
+                      </button>
                       <button class="btn btn-sm btn-outline-secondary" data-action="pdf" data-id="<?php echo $poliza['id']; ?>">PDF</button>
                   </td>
               </tr>
@@ -63,6 +68,7 @@ $polizas = $modeloPoliza->obtenerPolizasDeAgente($cedula_agente) ?: [];
             </div>
             <div class="modal-body">
                 <form id="crearPolizaForm">
+                  
                     <div class="form-row">
                         <div class="form-group col-md-6">
                             <label for="numero_poliza">Número de Póliza *</label>
@@ -123,65 +129,214 @@ $polizas = $modeloPoliza->obtenerPolizasDeAgente($cedula_agente) ?: [];
         </div>
     </div>
 </div>
+
+<div class="modal fade" id="edicionPolizaModal" tabindex="-1" role="dialog" aria-labelledby="edicionPolizaModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="edicionPolizaModalLabel">Editar Póliza</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form id="editarPolizaForm">
+                <div class="modal-body">
+                    <input type="hidden" id="id_poliza_edicion" name="id_poliza_edicion" value="0">
+                    
+                    <div class="form-group">
+                        <label>Cliente</label>
+                        <input type="text" class="form-control" id="cliente_poliza_edicion" readonly>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="numero_poliza_edicion">Número de Póliza</label>
+                        <input type="text" class="form-control" id="numero_poliza_edicion" name="numero_poliza" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="fecha_vencimiento_edicion">Fecha de Vencimiento</label>
+                        <input type="date" class="form-control" id="fecha_vencimiento_edicion" name="fecha_vencimiento" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="prima_anual_edicion">Prima Anual (Monto)</label>
+                        <input type="number" class="form-control" id="prima_anual_edicion" name="prima_anual" step="0.01" min="0" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="estado_edicion">Estado</label>
+                        <select class="form-control" id="estado_edicion" name="estado">
+                            <option value="Activa">Activa</option>
+                            <option value="Pendiente">Pendiente</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                    <button id="saveEdicionPoliza" type="submit" class="btn btn-success">Guardar Cambios</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 <?php
 // Se añade el script de manejo de formulario AJAX al final.
 $extra_scripts = <<<EOT
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script>
-\$(function(){
-  if (\$.fn.DataTable) {
-    // Inicialización de DataTables para ordenar y buscar el contenido ya renderizado por PHP
-    \$('#carteraTable').DataTable({ 
-      pageLength:10,
-      language: { // CLAVE: Traducción DataTables
-            "processing": "Procesando...", "lengthMenu": "Mostrar _MENU_ registros",
-            "zeroRecords": "No se encontraron resultados en la tabla.", "emptyTable": "No hay datos disponibles en la tabla",
-            "info": "Mostrando _START_ a _END_ de _TOTAL_ registros", "infoEmpty": "Mostrando 0 a 0 de 0 registros",
-            "infoFiltered": "(filtrado de _MAX_ registros totales)", "search": "Buscar:", "loadingRecords": "Cargando...",
-            "paginate": { "first": "Primero", "last": "Último", "next": "Siguiente", "previous": "Anterior" },
-            "aria": { "sortAscending": ": Activar para ordenar la columna de manera ascendente", "sortDescending": ": Activar para ordenar la columna de manera descendente" }
+\$(function() {
+    
+    // Asegúrate de que tu DataTables se inicialice aquí si aún no lo está
+    if ($.fn.DataTable) {
+        // Inicialización de DataTables para ordenar y buscar el contenido ya renderizado por PHP
+        $('#carteraTable').DataTable({ 
+            pageLength: 10,
+            // ... (resto de tus opciones de DataTables) ...
+        });
+    }
+
+// ==============================================================================
+// 1. LÓGICA DE CREACIÓN (Modal: #cotizacionModal)
+// ==============================================================================
+
+// Limpia el formulario de Creación cada vez que se abre
+$('#cotizacionModal').on('show.bs.modal', function (event) {
+    $('#crearPolizaForm')[0].reset(); 
+});
+
+// Maneja el envío del formulario de Creación
+$('#savePoliza').on('click', function(e) {
+    e.preventDefault();
+    
+    var form = $('#crearPolizaForm');
+    var saveButton = $(this);
+    
+    if (!form[0].checkValidity()) {
+        form[0].reportValidity();
+        return;
+    }
+    
+    // Acción Fija para el modal de Creación: crear_poliza
+    var data = form.serialize() + '&accion=crear_poliza'; 
+    
+    $.ajax({
+        url: 'controlador/controladorPoliza.php', 
+        type: 'POST',
+        data: data,
+        dataType: 'json',
+        beforeSend: function() {
+            saveButton.text('Guardando...').prop('disabled', true);
+        },
+        success: function(response) {
+            if (response.success) {
+                alert('✅ Éxito: ' + response.message);
+                $('#cotizacionModal').modal('hide');
+                window.location.reload(); // Recargar la tabla para mostrar la nueva póliza
+            } else {
+                alert('❌ Error al crear: ' + response.message);
+                saveButton.text('Guardar Póliza').prop('disabled', false);
+            }
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            alert('❌ Error de comunicación con el servidor al crear: ' + textStatus);
+            saveButton.text('Guardar Póliza').prop('disabled', false);
         }
     });
-  }
+});
 
-  // Lógica para Guardar la Póliza con AJAX
-  \$('#savePoliza').on('click', function(e) {
-      e.preventDefault();
-      
-      var form = \$('#crearPolizaForm');
-      var data = form.serialize() + '&accion=crear_poliza'; // Serializa los campos y añade la acción
-      
-      // Validación simple de campos requeridos antes de enviar
-      if (!form[0].checkValidity()) {
-          form[0].reportValidity();
-          return;
-      }
 
-      \$.ajax({
-          url: 'controlador/controladorPoliza.php', // Ruta al controlador
-          type: 'POST',
-          data: data,
-          dataType: 'json',
-          beforeSend: function() {
-              \$('#savePoliza').text('Guardando...').prop('disabled', true);
-          },
-          success: function(response) {
-              if (response.success) {
-                  alert('✅ Éxito: ' + response.message);
-                  \$('#cotizacionModal').modal('hide');
-                  window.location.reload(); // Recargar la tabla para mostrar la nueva póliza
-              } else {
-                  alert('❌ Error: ' + response.message);
-                  \$('#savePoliza').text('Guardar Póliza').prop('disabled', false);
-              }
-          },
-          error: function(jqXHR, textStatus, errorThrown) {
-              alert('❌ Error de comunicación con el servidor: ' + textStatus);
-              \$('#savePoliza').text('Guardar Póliza').prop('disabled', false);
-          }
-      });
-  });
+// ==============================================================================
+// 2. LÓGICA DE EDICIÓN (Modal: #edicionPolizaModal)
+// ==============================================================================
+
+// A. Cargar datos al hacer clic en el botón "Editar" de la tabla
+$('#carteraTable').on('click', '.btn-edit-poliza', function(e) {
+    e.preventDefault(); 
+    
+    var id_poliza = $(this).data('id');
+    var editModal = $('#edicionPolizaModal'); // <-- Referencia correcta al modal
+
+    // Muestra un mensaje de carga
+    $('#id_poliza_edicion').val(id_poliza); 
+    $('#edicionPolizaModalLabel').text('Cargando Póliza ID #' + id_poliza + '...');
+
+    // Oculta el modal, en caso de que haya habido conflicto al eliminar data-toggle
+    editModal.modal('hide'); 
+
+    // Cargar los datos de la póliza específica vía AJAX (GET)
+    $.ajax({
+        url: 'controlador/controladorPoliza.php',
+        type: 'GET', 
+        data: { accion: 'obtener_poliza', id_poliza: id_poliza }, 
+        dataType: 'json',
+        success: function(response) {
+            if (response.success) {
+                var data = response.data;
+                
+                // 1. Llenar los campos (Asegúrate que los IDs de los campos son correctos)
+                $('#cliente_poliza_edicion').val(data.nombre_cliente + ' (' + data.cedula_cliente + ')'); 
+                $('#numero_poliza_edicion').val(data.numero_poliza);
+                $('#fecha_vencimiento_edicion').val(data.fecha_vencimiento);
+                $('#prima_anual_edicion').val(data.prima_anual);
+                $('#estado_edicion').val(data.estado); 
+                
+                $('#edicionPolizaModalLabel').text('Editar Póliza ID #' + id_poliza);
+                
+                // 🔑 PASO CLAVE: ABRIR EL MODAL SOLO EN ÉXITO
+                editModal.modal('show'); 
+            } else {
+                // Caso de falla: Muestra el error
+                alert('❌ Error al cargar datos: ' + response.message);
+            }
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            alert('❌ Error de comunicación con el servidor al cargar la póliza: ' + textStatus);
+        }
+    });
+});
+
+// B. El manejo del envío del formulario de Edición (Guardar Cambios)
+// Este código permanece igual, ya que solo se ejecuta después de abrir el modal y hacer clic en Guardar.
+$('#editarPolizaForm').on('submit', function(e) {
+    e.preventDefault();
+    
+    var form = $(this); 
+    var saveButton = $('#saveEdicionPoliza');
+    
+    if (!form[0].checkValidity()) {
+        form[0].reportValidity();
+        return;
+    }
+    
+    // Acción Fija para el modal de Edición: actualizar_poliza
+    var data = form.serialize() + '&accion=actualizar_poliza'; 
+    
+    $.ajax({
+        url: 'controlador/controladorPoliza.php', 
+        type: 'POST',
+        data: data,
+        dataType: 'json',
+        beforeSend: function() {
+            saveButton.text('Procesando...').prop('disabled', true);
+        },
+        success: function(response) {
+            if (response.success) {
+                alert('✅ Éxito: ' + response.message);
+                $('#edicionPolizaModal').modal('hide');
+                window.location.reload(); 
+            } else {
+                alert('❌ Error al actualizar: ' + response.message);
+                saveButton.text('Guardar Cambios').prop('disabled', false);
+            }
+        },
+        error: function(jqXHR, textStatus, errorThrown) {
+            alert('❌ Error de comunicación con el servidor al guardar cambios: ' + textStatus);
+            saveButton.text('Guardar Cambios').prop('disabled', false);
+        }
+    });
+});
+
 });
 </script>
 EOT;
