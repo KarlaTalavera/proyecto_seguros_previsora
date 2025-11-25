@@ -71,6 +71,12 @@ $permisoPorAccion = [
 ];
 
 $permisoRequerido = $permisoPorAccion[$accion] ?? null;
+if ($rol === 'agente') {
+    $accionesPropias = ['r1', 'r4', 'r8', 'r_ramo', 'r_agente_ventas', 'kpis', 'kpis_agente', 'r_tipo_cliente', 'r_siniestros'];
+    if (in_array($accion, $accionesPropias, true)) {
+        $permisoRequerido = null;
+    }
+}
 if ($permisoRequerido) {
     controladorReporte_requierePermiso($permisoRequerido, $usuario, $permisosSesion);
 }
