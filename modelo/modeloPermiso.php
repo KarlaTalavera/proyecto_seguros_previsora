@@ -53,6 +53,33 @@ class ModeloPermiso {
     }
 
     /**
+     * Obtiene los nombres de los permisos activos asignados a un agente.
+     * @param string $cedula_agente
+     * @return array Lista de nombres de permisos activos.
+     */
+    public function obtenerNombresPermisosDeAgente($cedula_agente) {
+        if (!$this->db) {
+            return [];
+        }
+
+        $sql = "SELECT p.nombre_permiso
+                FROM agente_permiso ap
+                INNER JOIN permiso p ON ap.id_permiso = p.id_permiso
+                WHERE ap.cedula_agente = :cedula_agente AND ap.tiene_permiso = 1
+                ORDER BY p.nombre_permiso ASC";
+
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':cedula_agente', $cedula_agente);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_COLUMN, 0) ?: [];
+        } catch (\PDOException $e) {
+            error_log("Error de DB al obtener nombres de permisos del agente: " . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
      * Actualiza los permisos para un agente usando INSERT ... ON DUPLICATE KEY UPDATE.
      * Esto asegura que exista una fila para cada permiso y actualiza su estado.
      * @param string $cedula_agente La cédula del agente.

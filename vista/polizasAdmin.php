@@ -4,59 +4,264 @@ if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 require_once __DIR__ . '/parte_superior.php';
+require_once __DIR__ . '/agentes_estilos.php';
+require_once __DIR__ . '/polizas_estilos.php';
+
+$usuarioActual = $_SESSION['datos_usuario'] ?? null;
+$cedulaActual = ($usuarioActual && method_exists($usuarioActual, 'getCedula')) ? $usuarioActual->getCedula() : '';
+$nombreActual = ($usuarioActual && method_exists($usuarioActual, 'getNombreCompleto')) ? $usuarioActual->getNombreCompleto() : '';
+$permisosActuales = isset($_SESSION['permisos_usuario']) && is_array($_SESSION['permisos_usuario']) ? $_SESSION['permisos_usuario'] : [];
 ?>
 
 <div class="container-fluid">
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h3>Todas las Pólizas</h3>
-    <button class="btn btn-primary" data-toggle="modal" data-target="#newPolicyModal">Crear Nueva Póliza</button>
+    <div>
+      <h3 class="mb-0">Gestión de pólizas</h3>
+      <small class="text-muted">Administre la cartera completa de pólizas emitidas</small>
+    </div>
+    <button class="btn btn-primary" data-toggle="modal" data-target="#modalPoliza">Crear póliza</button>
   </div>
 
-  <div class="card"><div class="card-body">
-    <div class="form-inline mb-2">
-      <select class="form-control mr-2" id="filterRamo"><option value="">Todos los Ramos</option><option>Personas</option><option>Automóvil</option><option>Patrimoniales</option></select>
-      <select class="form-control mr-2" id="filterAseg"><option value="">Todos los Aseguradores</option><option>Juan García</option><option>Sara Molina</option></select>
-      <select class="form-control mr-2" id="filterEstado"><option value="">Todos los Estados</option><option>Activa</option><option>Renovar</option><option>Cancelada</option></select>
-      <button class="btn btn-secondary" id="applyFilters">Filtrar</button>
-    </div>
+  <div id="polizaPageAlert"></div>
 
-    <table id="allPolicies" class="table table-bordered w-100">
-      <thead><tr><th>ID</th><th>Ramo</th><th>Producto</th><th>Asegurador</th><th>Fecha Venc.</th><th>Prima</th><th>Acciones</th></tr></thead>
-      <tbody>
-        <tr><td>P-3001</td><td>Personas</td><td>RCV</td><td>Juan García</td><td>2025-12-01</td><td>$120</td>
-          <td><button class="btn btn-sm btn-primary" data-action="editar" data-id="p-3001">Editar</button> <button class="btn btn-sm btn-outline-secondary" data-action="ver" data-id="p-3001">Ver</button></td></tr>
-        <tr><td>P-3002</td><td>Automóvil</td><td>Comprehensive</td><td>Sara Molina</td><td>2025-08-15</td><td>$400</td>
-          <td><button class="btn btn-sm btn-primary" data-action="editar" data-id="p-3002">Editar</button> <button class="btn btn-sm btn-outline-secondary" data-action="ver" data-id="p-3002">Ver</button></td></tr>
-      </tbody>
-    </table>
-  </div></div>
+  <div class="card">
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-striped table-bordered" id="tablaPolizas">
+          <thead class="thead-light">
+            <tr>
+              <th>Número</th>
+              <th>Categoría</th>
+              <th>Ramo</th>
+              <th>Coberturas</th>
+              <th>Cliente</th>
+              <th>Agente</th>
+              <th>Inicio</th>
+              <th>Fin</th>
+              <th>Prima total</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
 </div>
 
-<!-- Modal Crear Póliza -->
-<div class="modal fade" id="newPolicyModal"><div class="modal-dialog"><div class="modal-content">
-  <div class="modal-header"><h5 class="modal-title">Crear Nueva Póliza</h5><button class="close" data-dismiss="modal">&times;</button></div>
-  <div class="modal-body">
-    <form id="policyForm">
-      <div class="form-group"><label>Ramo</label><select class="form-control" name="ramo"><option>Personas</option><option>Automóvil</option><option>Patrimoniales</option></select></div>
-      <div class="form-group"><label>Producto</label><input class="form-control" name="producto"></div>
-      <div class="form-group"><label>Asegurador</label><input class="form-control" name="asegurador"></div>
-      <div class="form-row"><div class="form-group col"><label>Prima</label><input class="form-control" name="prima"></div><div class="form-group col"><label>Vencimiento</label><input type="date" class="form-control" name="vencimiento"></div></div>
-    </form>
+<div class="modal fade modal-alineada" id="modalPoliza" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+    <div class="modal-content">
+      <form id="formPoliza" autocomplete="off">
+        <div class="modal-header">
+          <h5 class="modal-title">Crear póliza</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <div id="polizaFormAlert" class="alert d-none" role="alert"></div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>Número de póliza</label>
+              <input type="text" class="form-control" id="numeroPolizaPreview" readonly placeholder="Generando número...">
+            </div>
+            <div class="form-group col-md-6">
+              <label for="estadoPolizaSelect">Estado de la póliza</label>
+              <select class="form-control" id="estadoPolizaSelect" disabled>
+                <option value="ACTIVA" selected>Activa</option>
+                <option value="RENOVAR">Por vencer</option>
+                <option value="CANCELADA">Cancelada</option>
+              </select>
+              <small class="form-text text-muted">Solo se habilita al editar una póliza existente.</small>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="categoriaSelect">Categoría</label>
+              <select class="form-control" id="categoriaSelect">
+                <option value="">Seleccione...</option>
+              </select>
+            </div>
+            <div class="form-group col-md-6">
+              <label for="ramoSelect">Ramo / Tipo</label>
+              <select class="form-control" id="ramoSelect" disabled>
+                <option value="">Seleccione...</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="coberturasContainer">Coberturas asociadas</label>
+            <div id="coberturasContainer" class="border rounded p-3 bg-light"></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6" id="agenteGroup">
+              <label for="agenteSelect">Agente responsable</label>
+              <select class="form-control" id="agenteSelect">
+                <option value="">Seleccione...</option>
+              </select>
+            </div>
+            <div class="form-group col-md-6 d-none" id="agenteResumenWrapper">
+              <label>Agente responsable</label>
+              <div class="form-control-plaintext font-weight-bold" id="agenteResumenTexto"></div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="clienteSelect">Cliente asegurado</label>
+              <select class="form-control" id="clienteSelect">
+                <option value="">Seleccione...</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="fechaInicio">Fecha de inicio</label>
+              <input type="date" class="form-control" id="fechaInicio">
+            </div>
+            <div class="form-group col-md-6">
+              <label for="fechaFin">Fecha de fin</label>
+              <input type="date" class="form-control" id="fechaFin">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              <label for="montoPrimaTotal">Prima total</label>
+              <input type="number" class="form-control" id="montoPrimaTotal" min="0" step="0.01" placeholder="0,00">
+            </div>
+            <div class="form-group col-md-4">
+              <label for="numeroCuotas">Número de cuotas</label>
+              <input type="number" class="form-control" id="numeroCuotas" min="1" value="1">
+            </div>
+            <div class="form-group col-md-4">
+              <label>Cuota estimada</label>
+              <div class="form-control-plaintext font-weight-bold" id="montoCuotaResumen">--</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="frecuenciaPago">Frecuencia de pago</label>
+              <select class="form-control" id="frecuenciaPago">
+                <option value="MENSUAL">Mensual</option>
+                <option value="TRIMESTRAL">Trimestral</option>
+                <option value="SEMESTRAL">Semestral</option>
+                <option value="ANUAL">Anual</option>
+              </select>
+            </div>
+            <div class="form-group col-md-6">
+              <label for="fechaPrimerVencimiento">Primer vencimiento</label>
+              <input type="date" class="form-control" id="fechaPrimerVencimiento">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="neu-button" data-dismiss="modal">Cancelar</button>
+          <button type="submit" class="neu-button neu-primary" id="guardarPolizaBtn">Guardar póliza</button>
+        </div>
+      </form>
+    </div>
   </div>
-  <div class="modal-footer"><button class="btn btn-secondary" data-dismiss="modal">Cancelar</button><button id="savePolicy" class="btn btn-primary">Crear</button></div>
-</div></div></div>
+</div>
+
+<div class="modal fade" id="modalDetallePoliza" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalle de póliza</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-4">Número</dt>
+          <dd class="col-sm-8" id="detalleNumero">—</dd>
+
+          <dt class="col-sm-4">Estado</dt>
+          <dd class="col-sm-8" id="detalleEstado">—</dd>
+
+          <dt class="col-sm-4">Categoría</dt>
+          <dd class="col-sm-8" id="detalleCategoria">—</dd>
+
+          <dt class="col-sm-4">Ramo</dt>
+          <dd class="col-sm-8" id="detalleRamo">—</dd>
+
+          <dt class="col-sm-4">Cliente</dt>
+          <dd class="col-sm-8" id="detalleCliente">—</dd>
+
+          <dt class="col-sm-4">Cédula del cliente</dt>
+          <dd class="col-sm-8" id="detalleClienteCedula">—</dd>
+
+          <dt class="col-sm-4">Agente responsable</dt>
+          <dd class="col-sm-8" id="detalleAgente">—</dd>
+
+          <dt class="col-sm-4">Fecha de inicio</dt>
+          <dd class="col-sm-8" id="detalleFechaInicio">—</dd>
+
+          <dt class="col-sm-4">Fecha de fin</dt>
+          <dd class="col-sm-8" id="detalleFechaFin">—</dd>
+
+          <dt class="col-sm-4">Prima total</dt>
+          <dd class="col-sm-8" id="detallePrimaTotal">—</dd>
+
+          <dt class="col-sm-4">Número de cuotas</dt>
+          <dd class="col-sm-8" id="detalleNumeroCuotas">—</dd>
+
+          <dt class="col-sm-4">Monto por cuota</dt>
+          <dd class="col-sm-8" id="detalleMontoCuota">—</dd>
+
+          <dt class="col-sm-4">Frecuencia de pago</dt>
+          <dd class="col-sm-8" id="detalleFrecuencia">—</dd>
+
+          <dt class="col-sm-4">Primer vencimiento</dt>
+          <dd class="col-sm-8" id="detallePrimerVencimiento">—</dd>
+
+          <dt class="col-sm-4">Coberturas</dt>
+          <dd class="col-sm-8" id="detalleCoberturas">—</dd>
+        </dl>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="neu-button" data-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <?php
+$configJson = json_encode([
+  'rol' => 'administrador',
+  'cedulaActual' => $cedulaActual,
+  'nombreActual' => $nombreActual,
+  'permisos' => $permisosActuales
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
 $extra_scripts = <<<EOT
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="vendor/datatables/jquery.dataTables.min.js"></script>
+<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+<script src="js/polizas.js"></script>
 <script>
-\$(function(){
-  if (\$.fn.DataTable) {\$('#allPolicies').DataTable(); }
-  \$('#savePolicy').on('click', function(){ alert('Póliza creada (simulado).'); \$('#newPolicyModal').modal('hide'); });
-  \$('#applyFilters').on('click', function(){ alert('Filtros aplicados (simulado).'); });
-});
+(function (config) {
+  function start() {
+    if (typeof initPolizasUI === 'function') {
+      initPolizasUI(config);
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})($configJson);
 </script>
 EOT;
-require_once __DIR__ . "/parte_inferior.php";
+require_once __DIR__ . '/parte_inferior.php';
 ?>

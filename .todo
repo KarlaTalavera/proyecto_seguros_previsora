@@ -1,0 +1,2 @@
+DONE: Designed normalized payment tracking schema reflecting poliza_plan_pago/poliza_cuota
+DONE: Updated dashboard queries (r1, r4, r8) to use new payment data

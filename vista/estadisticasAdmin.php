@@ -12,8 +12,8 @@ require_once __DIR__ . '/parte_superior.php';
   <div class="row mt-3">
     <div class="col-md-3">
       <div class="card p-3 border-0 shadow-sm bg-white rounded">
-        <div class="small text-muted">Siniestralidad Global</div>
-        <h4 id="k_siniestralidad" class="text-secondary">—</h4>
+        <div class="small text-muted">Pólizas con Pagos Pendientes</div>
+        <h4 id="k_pendientes_pct" class="text-secondary">—</h4>
         <div class="mt-2" style="height:4px;width:40px;background:#f1f3f5;border-radius:2px;"></div>
       </div>
     </div>
@@ -53,7 +53,7 @@ require_once __DIR__ . '/parte_superior.php';
         </div>
       </div>
       <div class="col-lg-3">
-        <div class="card p-3"><h6>Cartera Pendiente</h6><div class="chart-wrapper" style="height:240px;"><canvas id="r4Chart" style="width:100%;height:100%;"></canvas></div></div>
+        <div class="card p-3"><h6>Estado de las Pólizas</h6><div class="chart-wrapper" style="height:240px;"><canvas id="r4Chart" style="width:100%;height:100%;"></canvas></div></div>
       </div>
       <div class="col-lg-3">
         <div class="card p-3"><h6>Ranking Productividad</h6><div class="chart-wrapper" style="height:240px;"><canvas id="r8Chart" style="width:100%;height:100%;"></canvas></div></div>
@@ -74,7 +74,8 @@ require_once __DIR__ . '/parte_superior.php';
       if (res.success && res.data && res.data.length) {
         res.data.forEach(function(row, idx){
           const agente = (row.nombre_agente ? (row.nombre_agente + ' ' + row.apellido_agente) : row.cedula_agente);
-          tbody.append('<tr><td>' + (idx+1) + '</td><td>' + row.numero_poliza + '</td><td>' + agente + '</td><td>' + row.fecha_fin + '</td><td>' + (row.monto_prima || '') + '</td></tr>');
+          const prima = row.monto_prima_total !== undefined ? row.monto_prima_total : (row.monto_prima || '');
+          tbody.append('<tr><td>' + (idx+1) + '</td><td>' + row.numero_poliza + '</td><td>' + agente + '</td><td>' + row.fecha_fin + '</td><td>' + prima + '</td></tr>');
         });
       } else {
         tbody.append('<tr><td colspan="5" class="text-center text-muted">No se encontraron pólizas por vencer en los próximos 30 días.</td></tr>');
@@ -86,58 +87,52 @@ require_once __DIR__ . '/parte_superior.php';
   // Palette provided by user
   const palette = ['#d3b8ff','#a98fff','#7e61ff','#513dff','#2d1aff'];
 
-  // R4: cuotas vencidas
+  // R4: distribución de estados de póliza
     $.getJSON('controlador/controladorReporte.php', { accion: 'r4' }, function(res){
-        if (res.success && res.data && res.data.buckets) {
-        const buckets = res.data.buckets || {};
-        const data = [parseFloat(buckets.b_0_30||0), parseFloat(buckets.b_31_60||0), parseFloat(buckets.b_61_90||0), parseFloat(buckets.b_90p||0)];
-        const total = parseFloat(res.data.total['total_pending']||0) || 0;
-        if (total <= 0 && data.every(v => v <= 0)) {
-          $('#r4Chart').parent().append('<div class="text-center text-muted small mt-2">No hay cuotas vencidas.</div>');
-        } else {
-          // labels más legibles en español
-          const r4labels = ['1-30 días','31-60 días','61-90 días','Más de 90 días'];
-          // formateador simple para tooltips (miles)
-          const fmt = function(v){ try { return Number(v).toLocaleString('es-VE'); } catch(e) { return String(v); } };
-          new Chart(document.getElementById('r4Chart'), {
-            type: 'doughnut',
-            data: { labels: r4labels, datasets:[{data:data, backgroundColor:[palette[0], palette[1], palette[2], palette[3]]}]},
-            options: {
-              maintainAspectRatio: false,
-              plugins:{
-                legend:{position:'bottom'},
-                // tooltip callback para Chart.js v3+
-                tooltip: {
-                  callbacks: {
-                    label: function(ctx){
-                      const v = ctx.parsed || ctx.raw || ctx.value || 0;
-                      const label = ctx.label || '';
-                      return label + ': ' + fmt(v);
-                    }
-                  }
-                }
-              },
-              // v2 compatibility: tooltips callbacks
-              tooltips: {
-                callbacks: {
-                  label: function(tooltipItem, data){
-                    const idx = tooltipItem.index || 0;
-                    const v = data.datasets && data.datasets[0] && data.datasets[0].data ? data.datasets[0].data[idx] : 0;
-                    const label = data.labels && data.labels[idx] ? data.labels[idx] : '';
-                    return label + ': ' + fmt(v);
-                  }
-                }
-              }
-            }
-          });
-          // nota explicativa
-          $('#r4Chart').parent().append('<div class="small text-muted mt-2">Cuotas vencidas: montos vencidos agrupados por antigüedad. "Más de 90 días" indica deudas con más de 90 días de atraso.</div>');
+      const container = $('#r4Chart').parent();
+      container.find('.chart-note').remove();
+      if (res.success && Array.isArray(res.data) && res.data.length) {
+        const rows = res.data;
+        const labelizeEstado = function(estado){
+          if (!estado) return 'Sin estado';
+          return estado.toString().toLowerCase()
+            .split(/[_\s]+/)
+            .filter(Boolean)
+            .map(function(part){ return part.charAt(0).toUpperCase() + part.slice(1); })
+            .join(' ');
+        };
+        const labels = rows.map(function(row){ return labelizeEstado(row.estado); });
+        const data = rows.map(function(row){ return parseInt(row.total || 0, 10); });
+        const hasData = data.some(function(value){ return value > 0; });
+        if (!hasData) {
+          try { if (window.r4ChartInstance) { window.r4ChartInstance.destroy(); } } catch (e) {}
+          window.r4ChartInstance = null;
+          container.append('<div class="text-center text-muted small mt-2 chart-note">No hay pólizas registradas.</div>');
+          return;
         }
+        const colors = labels.map(function(_, idx){ return palette[idx % palette.length]; });
+        try { if (window.r4ChartInstance) { window.r4ChartInstance.destroy(); } } catch (e) {}
+        const ctxEl = document.getElementById('r4Chart');
+        window.r4ChartInstance = new Chart(ctxEl, {
+          type: 'doughnut',
+          data: { labels: labels, datasets: [{ data: data, backgroundColor: colors }] },
+          options: {
+            maintainAspectRatio: false,
+            plugins: { legend: { position: 'bottom' } }
+          }
+        });
+        container.append('<div class="small text-muted mt-2 chart-note">Distribución por estado de las pólizas registradas.</div>');
       } else {
-        $('#r4Chart').parent().append('<div class="text-center text-muted small mt-2">No hay datos de cuotas vencidas.</div>');
+        try { if (window.r4ChartInstance) { window.r4ChartInstance.destroy(); } } catch (e) {}
+        window.r4ChartInstance = null;
+        container.append('<div class="text-center text-muted small mt-2 chart-note">No hay datos de estados de póliza.</div>');
       }
     }).fail(function(){
-      $('#r4Chart').parent().append('<div class="text-center text-danger small mt-2">Error cargando cuotas vencidas.</div>');
+      const container = $('#r4Chart').parent();
+      container.find('.chart-note').remove();
+      try { if (window.r4ChartInstance) { window.r4ChartInstance.destroy(); } } catch (e) {}
+      window.r4ChartInstance = null;
+      container.append('<div class="text-center text-danger small mt-2 chart-note">Error cargando estados de póliza.</div>');
     });
 
     // R8: ranking productividad
@@ -238,10 +233,16 @@ require_once __DIR__ . '/parte_superior.php';
     // KPIs superiores
     $.getJSON('controlador/controladorReporte.php', { accion: 'kpis' }, function(res){
       if (res.success && res.data) {
-        const capped = Number(res.data.siniestralidad_pct || 0);
-        const raw = Number(res.data.siniestralidad_raw || capped);
-  // mostrar el valor real (raw). El capped sigue disponible para referencia en el title
-  $('#k_siniestralidad').text(raw + '%').attr('title', 'Calculado como (monto estimado siniestros / primas suscritas) * 100. Mostrar (raw): ' + raw + '%, (capped): ' + capped + '%');
+        const totalPolizas = Number(res.data.polizas_total || 0);
+        const pendientes = Number(res.data.polizas_pendientes || 0);
+        const pct = Number(res.data.polizas_pendientes_pct || 0);
+        const pctDisplay = Number.isFinite(pct) ? (pct >= 10 ? pct.toFixed(1) : pct.toFixed(2)) : '0.00';
+        const totalFormatted = Number.isFinite(totalPolizas) ? totalPolizas.toLocaleString('es-VE') : '0';
+        const pendientesFormatted = Number.isFinite(pendientes) ? pendientes.toLocaleString('es-VE') : '0';
+        const titleText = totalPolizas > 0
+          ? pendientesFormatted + ' de ' + totalFormatted + ' pólizas con cuotas pendientes.'
+          : 'Sin pólizas registradas.';
+        $('#k_pendientes_pct').text(pctDisplay + '%').attr('title', titleText);
         $('#k_primas_pagadas').text(Number(res.data.primas_pagadas || 0).toLocaleString('es-VE'));
         $('#k_agentes_activos').text(res.data.agentes_activos || 0);
         $('#k_siniestros_abiertos').text(res.data.siniestros_abiertos || 0);

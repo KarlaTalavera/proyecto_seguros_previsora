@@ -17,7 +17,7 @@
   </div>
 
   <div class="card">
-    <h4>R4 - Cartera pendiente</h4>
+    <h4>R4 - Estados de pólizas</h4>
     <div id="r4_area"><em>Cargando...</em></div>
     <pre id="r4_json"></pre>
   </div>
@@ -31,12 +31,12 @@
   <div class="card">
     <h4>SQL útil para marcar pagos como vencidos (ejecuta en phpMyAdmin)</h4>
     <pre>
--- Ajusta las fechas de los pagos para testing R4 (marcar vencidos)
-UPDATE pago_prima SET fecha_vencimiento = DATE_SUB(CURDATE(), INTERVAL 10 DAY) WHERE id_pago_prima = 1000;
-UPDATE pago_prima SET fecha_vencimiento = DATE_SUB(CURDATE(), INTERVAL 35 DAY) WHERE id_pago_prima = 1001;
-UPDATE pago_prima SET fecha_vencimiento = DATE_SUB(CURDATE(), INTERVAL 65 DAY) WHERE id_pago_prima = 1002;
-UPDATE pago_prima SET fecha_vencimiento = DATE_SUB(CURDATE(), INTERVAL 120 DAY) WHERE id_pago_prima = 1003;
-UPDATE pago_prima SET fecha_vencimiento = DATE_SUB(CURDATE(), INTERVAL 200 DAY) WHERE id_pago_prima = 1004;
+-- Ajusta las fechas de las cuotas para testing R4 (marcar vencidos)
+UPDATE poliza_cuota SET fecha_vencimiento = DATE_SUB(CURDATE(), INTERVAL 10 DAY) WHERE id_cuota = 1;
+UPDATE poliza_cuota SET fecha_vencimiento = DATE_SUB(CURDATE(), INTERVAL 35 DAY) WHERE id_cuota = 2;
+UPDATE poliza_cuota SET fecha_vencimiento = DATE_SUB(CURDATE(), INTERVAL 65 DAY) WHERE id_cuota = 3;
+UPDATE poliza_cuota SET fecha_vencimiento = DATE_SUB(CURDATE(), INTERVAL 120 DAY) WHERE id_cuota = 4;
+UPDATE poliza_cuota SET fecha_vencimiento = DATE_SUB(CURDATE(), INTERVAL 200 DAY) WHERE id_cuota = 5;
     </pre>
   </div>
 
@@ -53,7 +53,10 @@ UPDATE pago_prima SET fecha_vencimiento = DATE_SUB(CURDATE(), INTERVAL 200 DAY) 
         if (res.success && res.data && res.data.length){
           const table = $('<table border="1" cellpadding="6"></table>');
           table.append('<tr><th>#</th><th>Póliza</th><th>Agente</th><th>Vence</th><th>Prima</th></tr>');
-          res.data.forEach(function(r,i){ table.append('<tr><td>'+(i+1)+'</td><td>'+r.numero_poliza+'</td><td>'+(r.nombre_agente||r.cedula_agente)+' '+(r.apellido_agente||'')+'</td><td>'+r.fecha_fin+'</td><td>'+ (r.monto_prima||'') +'</td></tr>'); });
+          res.data.forEach(function(r,i){
+            const prima = r.monto_prima_total !== undefined ? r.monto_prima_total : (r.monto_prima || '');
+            table.append('<tr><td>'+(i+1)+'</td><td>'+r.numero_poliza+'</td><td>'+(r.nombre_agente||r.cedula_agente)+' '+(r.apellido_agente||'')+'</td><td>'+r.fecha_fin+'</td><td>'+ prima +'</td></tr>');
+          });
           area.append(table);
         } else {
           area.append('<div style="color:#666">No hay pólizas próximas a vencer (respuesta vacía)</div>');
@@ -65,15 +68,28 @@ UPDATE pago_prima SET fecha_vencimiento = DATE_SUB(CURDATE(), INTERVAL 200 DAY) 
       .done(function(res){
         showJson('#r4_json', res);
         const area = $('#r4_area'); area.empty();
-        if (res.success && res.data && res.data.buckets){
-          const buckets = res.data.buckets;
-          const total = res.data.total && (res.data.total.total_pending || res.data.total.total_pending === 0) ? res.data.total.total_pending : null;
-          area.append('<div>Count pendientes: '+(res.data.total.count_pending||0) +'</div>');
-          area.append('<div>Total (suma): '+(total===null? 'NULL' : total) +'</div>');
-          area.append('<div>Buckets:</div>');
-          const ul = $('<ul></ul>'); ul.append('<li>1-30d: '+(buckets.b_0_30||0)+'</li>'); ul.append('<li>31-60d: '+(buckets.b_31_60||0)+'</li>'); ul.append('<li>61-90d: '+(buckets.b_61_90||0)+'</li>'); ul.append('<li>>90d: '+(buckets.b_90p||0)+'</li>'); area.append(ul);
+        if (res.success && Array.isArray(res.data) && res.data.length){
+          const rows = res.data;
+          const fmtEstado = function(estado){
+            if (!estado) return 'Sin estado';
+            return estado.toString().toLowerCase()
+              .split(/[_\s]+/)
+              .filter(Boolean)
+              .map(function(part){ return part.charAt(0).toUpperCase() + part.slice(1); })
+              .join(' ');
+          };
+          const totalPolizas = rows.reduce(function(acc, row){ return acc + parseInt(row.total || 0, 10); }, 0);
+          const table = $('<table border="1" cellpadding="6"></table>');
+          table.append('<tr><th>Estado</th><th>Pólizas</th></tr>');
+          rows.forEach(function(row){
+            const estado = fmtEstado(row.estado);
+            const total = parseInt(row.total || 0, 10);
+            table.append('<tr><td>'+ estado +'</td><td>'+ total +'</td></tr>');
+          });
+          area.append('<div>Total pólizas analizadas: '+ totalPolizas +'</div>');
+          area.append(table);
         } else {
-          area.append('<div style="color:#666">No hay datos de cartera vencida.</div>');
+          area.append('<div style="color:#666">No hay datos de estados de póliza.</div>');
         }
       }).fail(function(xhr){ $('#r4_area').text('Error al cargar R4: '+xhr.statusText); });
 

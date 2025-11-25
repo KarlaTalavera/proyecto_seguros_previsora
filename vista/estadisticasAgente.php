@@ -100,7 +100,8 @@ $extra_scripts = <<<EOT
     if (res.success && res.data && res.data.length) {
       res.data.forEach(function(row, idx){
         const agente = (row.nombre_agente ? (row.nombre_agente + ' ' + row.apellido_agente) : (row.cedula_agente||'') );
-        tbody.append('<tr><td>' + (idx+1) + '</td><td>' + (row.numero_poliza||'') + '</td><td>' + agente + '</td><td>' + (row.fecha_fin||'') + '</td><td>' + (row.monto_prima||'') + '</td></tr>');
+        const prima = row.monto_prima_total !== undefined ? row.monto_prima_total : (row.monto_prima || '');
+        tbody.append('<tr><td>' + (idx+1) + '</td><td>' + (row.numero_poliza||'') + '</td><td>' + agente + '</td><td>' + (row.fecha_fin||'') + '</td><td>' + prima + '</td></tr>');
       });
     } else {
       console.debug('R1 response', res);

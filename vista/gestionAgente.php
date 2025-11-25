@@ -61,6 +61,36 @@ if (is_array($todos_los_usuarios)) {
     opacity: 0.8;
   }
 
+  /* Espaciado interior para que el contenido no quede pegado a los bordes */
+  #modalNuevoAgente .modal-body {
+    padding: 1.5rem; /* mayor padding interior */
+  }
+  #modalNuevoAgente .modal-footer {
+    padding: 1rem 1.5rem; /* espacio alrededor de los botones */
+    gap: 0.5rem;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+  }
+  #modalNuevoAgente .form-group {
+    margin-bottom: 1rem; /* separar campos */
+  }
+  #modalNuevoAgente .input-group .input-group-prepend .input-group-text {
+    padding: 0.55rem 0.75rem; /* hacer los iconos menos compactos */
+  }
+  #modalNuevoAgente .form-row {
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+  }
+  #modalNuevoAgente .form-row > .col-md-6 {
+    padding-left: 0.25rem;
+    padding-right: 0.25rem;
+  }
+  /* Ajuste visual para el mensaje de respuesta */
+  #respuestaCrearAgente .alert {
+    margin-bottom: 0;
+  }
+
   .perm-group-card {
      border: 1px solid #ccc; /* Borde sutil para las tarjetas */
   }

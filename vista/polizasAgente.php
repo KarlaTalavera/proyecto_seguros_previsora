@@ -1,343 +1,269 @@
 <?php
 require_once dirname(__DIR__) . '/modelo/modeloUsuario.php';
-require_once dirname(__DIR__) . '/modelo/modeloPoliza.php';
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
 require_once __DIR__ . '/parte_superior.php';
+require_once __DIR__ . '/agentes_estilos.php';
+require_once __DIR__ . '/polizas_estilos.php';
 
-$modeloPoliza = new ModeloPoliza();
-// Se cambia la cédula de prueba a una existente en la BD para ver resultados
-$cedula_agente = $_SESSION['agente_cedula'] ?? 'V12345678'; 
-$polizas = $modeloPoliza->obtenerPolizasDeAgente($cedula_agente) ?: [];
+$usuarioActual = $_SESSION['datos_usuario'] ?? null;
+$cedulaActual = ($usuarioActual && method_exists($usuarioActual, 'getCedula')) ? $usuarioActual->getCedula() : '';
+$nombreActual = ($usuarioActual && method_exists($usuarioActual, 'getNombreCompleto')) ? $usuarioActual->getNombreCompleto() : '';
+$permisosActuales = isset($_SESSION['permisos_usuario']) && is_array($_SESSION['permisos_usuario']) ? $_SESSION['permisos_usuario'] : [];
+$puedeCrearPoliza = in_array('poliza_crear', $permisosActuales, true);
 ?>
 
 <div class="container-fluid">
-  <div class="d-flex justify-content-between mb-3">
-    <h3>Mi Cartera de Pólizas</h3> <div>
-      <button class="btn btn-secondary mr-2" id="exportCsv">Exportar CSV</button>
-      <button class="btn btn-primary" data-toggle="modal" data-target="#cotizacionModal">Crear Póliza</button>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+      <h3 class="mb-0">Mis pólizas</h3>
+      <small class="text-muted">Consulte y emita pólizas para su cartera de clientes</small>
     </div>
+    <?php if ($puedeCrearPoliza): ?>
+    <button class="btn btn-primary" data-toggle="modal" data-target="#modalPoliza" id="btnRegistrarPoliza">Registrar póliza</button>
+    <?php endif; ?>
   </div>
+
+  <div id="polizaPageAlert"></div>
 
   <div class="card">
-  <div class="card-body">
-    <table id="carteraTable" class="table table-striped w-100">
-      <thead>
-        <tr><th>ID Póliza</th><th>Producto</th><th>Cliente</th><th>Vencimiento</th><th>Prima</th><th>Estado</th><th>Acciones</th></tr>
-      </thead>
-      <tbody>
-        <?php if (!empty($polizas)): ?>
-          <?php foreach ($polizas as $poliza): 
-              $badge_class = match ($poliza['estado']) {
-                  'ACTIVA' => 'badge-success',
-                  'VENCER' => 'badge-warning',
-                  'PENDIENTE' => 'badge-info',
-                  default => 'badge-warning', 
-              };
-              $estado_html = '<span class="badge ' . $badge_class . '">' . htmlspecialchars($poliza['estado']) . '</span>';
-              $prima_formato = '$' . number_format($poliza['prima'], 2, ',', '.');
-          ?>
-              <tr>
-                  <td><?php echo htmlspecialchars($poliza['id']); ?></td>
-                  <td><?php echo htmlspecialchars($poliza['producto']); ?></td>
-                  <td><?php echo htmlspecialchars($poliza['cliente']); ?></td>
-                  <td><?php echo htmlspecialchars($poliza['vencimiento']); ?></td>
-                  <td><?php echo $prima_formato; ?></td>
-                  <td><?php echo $estado_html; ?></td>
-                  <td>
-                      <button class="btn btn-sm btn-info btn-edit-poliza" 
-                              data-id="<?= htmlspecialchars($poliza['id']) ?>" 
-                              data-toggle="modal" 
-                              data-target="#edicionPolizaModal"  title="Editar Póliza">
-                          <i class="fas fa-edit"></i>
-                      </button>
-                      <button class="btn btn-sm btn-outline-secondary" data-action="pdf" data-id="<?php echo $poliza['id']; ?>">PDF</button>
-                  </td>
-              </tr>
-          <?php endforeach; ?>
-        <?php endif; ?> </tbody>
-    </table>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table table-striped table-bordered" id="tablaPolizas">
+          <thead class="thead-light">
+            <tr>
+              <th>Número</th>
+              <th>Categoría</th>
+              <th>Ramo</th>
+              <th>Coberturas</th>
+              <th>Cliente</th>
+              <th>Agente</th>
+              <th>Inicio</th>
+              <th>Fin</th>
+              <th>Prima total</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
-<div class="modal fade" id="cotizacionModal">
-    <div class="modal-dialog modal-lg modal-dialog-centered"> <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Crear Nueva Póliza</h5>
-                <button class="close" data-dismiss="modal">&times;</button>
-            </div>
-            <div class="modal-body">
-                <form id="crearPolizaForm">
-                  
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label for="numero_poliza">Número de Póliza *</label>
-                            <input class="form-control" id="numero_poliza" name="numero_poliza" placeholder="Ej: PRED-2025-001" required>
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="id_tipo_poliza">Producto / Tipo de Póliza *</label>
-                            <select class="form-control" id="id_tipo_poliza" name="id_tipo_poliza" required>
-                                <option value="" disabled selected>Seleccione un producto</option>
-                                <?php
-                                $tipos_poliza = $modeloPoliza->obtenerTiposPoliza() ?: [];
-                                foreach ($tipos_poliza as $tipo): ?>
-                                    <option value="<?php echo htmlspecialchars($tipo['id_tipo_poliza']); ?>">
-                                        <?php echo htmlspecialchars($tipo['nombre']); ?>
-                                    </option>
-                                <?php endforeach; ?>
-                    
-                            </select>
-                        </div>
-                    </div>
 
-                    <div class="form-row">
-                        <div class="form-group col-md-6">
-                            <label for="cedula_cliente">Cédula del Cliente *</label>
-                            <input class="form-control" id="cedula_cliente" name="cedula_cliente" placeholder="V-12345678" required>
-                            <small class="form-text text-muted">Asegúrese de que el cliente esté registrado.</small>
-                        </div>
-                        <div class="form-group col-md-6">
-                            <label for="fecha_vencimiento">Fecha de Vencimiento *</label>
-                            <input type="date" class="form-control" id="fecha_vencimiento" name="fecha_vencimiento" required>
-                        </div>
-                    </div>
-
-                    <div class="form-row">
-                        <div class="form-group col-md-4">
-                            <label for="prima_anual">Prima Anual ($) *</label>
-                            <input class="form-control" id="prima_anual" name="prima_anual" type="number" step="0.01" min="0" placeholder="Ej: 120.00" required>
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label for="monto_asegurado">Monto Asegurado ($)</label>
-                            <input class="form-control" id="monto_asegurado" name="monto_asegurado" type="number" step="0.01" min="0" placeholder="Ej: 50000.00">
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label for="estado_poliza">Estado</label>
-                            <select class="form-control" id="estado_poliza" name="estado">
-                                <option value="Activa" selected>Activa</option>
-                                <option value="Pendiente">Pendiente</option>
-                            </select>
-                        </div>
-                    </div>
-                </form>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                <button id="savePoliza" type="button" class="btn btn-success">Guardar Póliza</button>
-                
-            </div>
+<div class="modal fade modal-alineada" id="modalPoliza" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
+    <div class="modal-content">
+      <form id="formPoliza" autocomplete="off">
+        <div class="modal-header">
+          <h5 class="modal-title">Registrar póliza</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+            <span aria-hidden="true">&times;</span>
+          </button>
         </div>
+        <div class="modal-body">
+          <div id="polizaFormAlert" class="alert d-none" role="alert"></div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label>Número de póliza</label>
+              <input type="text" class="form-control" id="numeroPolizaPreview" readonly placeholder="Generando número...">
+            </div>
+            <div class="form-group col-md-6">
+              <label for="estadoPolizaSelect">Estado de la póliza</label>
+              <select class="form-control" id="estadoPolizaSelect" disabled>
+                <option value="ACTIVA" selected>Activa</option>
+                <option value="RENOVAR">Por vencer</option>
+                <option value="CANCELADA">Cancelada</option>
+              </select>
+              <small class="form-text text-muted">Solo se habilita al editar una póliza existente.</small>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="categoriaSelect">Categoría</label>
+              <select class="form-control" id="categoriaSelect">
+                <option value="">Seleccione...</option>
+              </select>
+            </div>
+            <div class="form-group col-md-6">
+              <label for="ramoSelect">Ramo / Tipo</label>
+              <select class="form-control" id="ramoSelect" disabled>
+                <option value="">Seleccione...</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="coberturasContainer">Coberturas asociadas</label>
+            <div id="coberturasContainer" class="border rounded p-3 bg-light"></div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6 d-none" id="agenteGroup">
+              <label for="agenteSelect">Agente responsable</label>
+              <select class="form-control" id="agenteSelect">
+                <option value="">Seleccione...</option>
+              </select>
+            </div>
+            <div class="form-group col-md-6" id="agenteResumenWrapper">
+              <label>Agente responsable</label>
+              <div class="form-control-plaintext font-weight-bold" id="agenteResumenTexto"></div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="clienteSelect">Cliente asegurado</label>
+              <select class="form-control" id="clienteSelect">
+                <option value="">Seleccione...</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="fechaInicio">Fecha de inicio</label>
+              <input type="date" class="form-control" id="fechaInicio">
+            </div>
+            <div class="form-group col-md-6">
+              <label for="fechaFin">Fecha de fin</label>
+              <input type="date" class="form-control" id="fechaFin">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-4">
+              <label for="montoPrimaTotal">Prima total</label>
+              <input type="number" class="form-control" id="montoPrimaTotal" min="0" step="0.01" placeholder="0,00">
+            </div>
+            <div class="form-group col-md-4">
+              <label for="numeroCuotas">Número de cuotas</label>
+              <input type="number" class="form-control" id="numeroCuotas" min="1" value="1">
+            </div>
+            <div class="form-group col-md-4">
+              <label>Cuota estimada</label>
+              <div class="form-control-plaintext font-weight-bold" id="montoCuotaResumen">--</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group col-md-6">
+              <label for="frecuenciaPago">Frecuencia de pago</label>
+              <select class="form-control" id="frecuenciaPago">
+                <option value="MENSUAL">Mensual</option>
+                <option value="TRIMESTRAL">Trimestral</option>
+                <option value="SEMESTRAL">Semestral</option>
+                <option value="ANUAL">Anual</option>
+              </select>
+            </div>
+            <div class="form-group col-md-6">
+              <label for="fechaPrimerVencimiento">Primer vencimiento</label>
+              <input type="date" class="form-control" id="fechaPrimerVencimiento">
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="neu-button" data-dismiss="modal">Cancelar</button>
+          <button type="submit" class="neu-button neu-primary" id="guardarPolizaBtn">Guardar póliza</button>
+        </div>
+      </form>
     </div>
+  </div>
 </div>
 
-<div class="modal fade" id="edicionPolizaModal" tabindex="-1" role="dialog" aria-labelledby="edicionPolizaModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="edicionPolizaModalLabel">Editar Póliza</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form id="editarPolizaForm">
-                <div class="modal-body">
-                    <input type="hidden" id="id_poliza_edicion" name="id_poliza_edicion" value="0">
-                    
-                    <div class="form-group">
-                        <label>Cliente</label>
-                        <input type="text" class="form-control" id="cliente_poliza_edicion" readonly>
-                    </div>
+<div class="modal fade" id="modalDetallePoliza" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalle de póliza</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Cerrar">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-4">Número</dt>
+          <dd class="col-sm-8" id="detalleNumero">—</dd>
 
-                    <div class="form-group">
-                        <label for="numero_poliza_edicion">Número de Póliza</label>
-                        <input type="text" class="form-control" id="numero_poliza_edicion" name="numero_poliza" required>
-                    </div>
+          <dt class="col-sm-4">Estado</dt>
+          <dd class="col-sm-8" id="detalleEstado">—</dd>
 
-                    <div class="form-group">
-                        <label for="fecha_vencimiento_edicion">Fecha de Vencimiento</label>
-                        <input type="date" class="form-control" id="fecha_vencimiento_edicion" name="fecha_vencimiento" required>
-                    </div>
+          <dt class="col-sm-4">Categoría</dt>
+          <dd class="col-sm-8" id="detalleCategoria">—</dd>
 
-                    <div class="form-group">
-                        <label for="prima_anual_edicion">Prima Anual (Monto)</label>
-                        <input type="number" class="form-control" id="prima_anual_edicion" name="prima_anual" step="0.01" min="0" required>
-                    </div>
+          <dt class="col-sm-4">Ramo</dt>
+          <dd class="col-sm-8" id="detalleRamo">—</dd>
 
-                    <div class="form-group">
-                        <label for="estado_edicion">Estado</label>
-                        <select class="form-control" id="estado_edicion" name="estado">
-                            <option value="Activa">Activa</option>
-                            <option value="Pendiente">Pendiente</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
-                    <button id="saveEdicionPoliza" type="submit" class="btn btn-success">Guardar Cambios</button>
-                </div>
-            </form>
-        </div>
+          <dt class="col-sm-4">Cliente</dt>
+          <dd class="col-sm-8" id="detalleCliente">—</dd>
+
+          <dt class="col-sm-4">Cédula del cliente</dt>
+          <dd class="col-sm-8" id="detalleClienteCedula">—</dd>
+
+          <dt class="col-sm-4">Agente responsable</dt>
+          <dd class="col-sm-8" id="detalleAgente">—</dd>
+
+          <dt class="col-sm-4">Fecha de inicio</dt>
+          <dd class="col-sm-8" id="detalleFechaInicio">—</dd>
+
+          <dt class="col-sm-4">Fecha de fin</dt>
+          <dd class="col-sm-8" id="detalleFechaFin">—</dd>
+
+          <dt class="col-sm-4">Prima total</dt>
+          <dd class="col-sm-8" id="detallePrimaTotal">—</dd>
+
+          <dt class="col-sm-4">Número de cuotas</dt>
+          <dd class="col-sm-8" id="detalleNumeroCuotas">—</dd>
+
+          <dt class="col-sm-4">Monto por cuota</dt>
+          <dd class="col-sm-8" id="detalleMontoCuota">—</dd>
+
+          <dt class="col-sm-4">Frecuencia de pago</dt>
+          <dd class="col-sm-8" id="detalleFrecuencia">—</dd>
+
+          <dt class="col-sm-4">Primer vencimiento</dt>
+          <dd class="col-sm-8" id="detallePrimerVencimiento">—</dd>
+
+          <dt class="col-sm-4">Coberturas</dt>
+          <dd class="col-sm-8" id="detalleCoberturas">—</dd>
+        </dl>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="neu-button" data-dismiss="modal">Cerrar</button>
+      </div>
     </div>
+  </div>
 </div>
+
 <?php
-// Se añade el script de manejo de formulario AJAX al final.
+$configJson = json_encode([
+    'rol' => 'agente',
+    'cedulaActual' => $cedulaActual,
+  'nombreActual' => $nombreActual,
+  'permisos' => $permisosActuales
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
 $extra_scripts = <<<EOT
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="vendor/datatables/jquery.dataTables.min.js"></script>
+<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+<script src="js/polizas.js"></script>
 <script>
-\$(function() {
-    
-    // Asegúrate de que tu DataTables se inicialice aquí si aún no lo está
-    if ($.fn.DataTable) {
-        // Inicialización de DataTables para ordenar y buscar el contenido ya renderizado por PHP
-        $('#carteraTable').DataTable({ 
-            pageLength: 10,
-            // ... (resto de tus opciones de DataTables) ...
-        });
+(function (config) {
+  function start() {
+    if (typeof initPolizasUI === 'function') {
+      initPolizasUI(config);
     }
-
-// ==============================================================================
-// 1. LÓGICA DE CREACIÓN (Modal: #cotizacionModal)
-// ==============================================================================
-
-// Limpia el formulario de Creación cada vez que se abre
-$('#cotizacionModal').on('show.bs.modal', function (event) {
-    $('#crearPolizaForm')[0].reset(); 
-});
-
-// Maneja el envío del formulario de Creación
-$('#savePoliza').on('click', function(e) {
-    e.preventDefault();
-    
-    var form = $('#crearPolizaForm');
-    var saveButton = $(this);
-    
-    if (!form[0].checkValidity()) {
-        form[0].reportValidity();
-        return;
-    }
-    
-    // Acción Fija para el modal de Creación: crear_poliza
-    var data = form.serialize() + '&accion=crear_poliza'; 
-    
-    $.ajax({
-        url: 'controlador/controladorPoliza.php', 
-        type: 'POST',
-        data: data,
-        dataType: 'json',
-        beforeSend: function() {
-            saveButton.text('Guardando...').prop('disabled', true);
-        },
-        success: function(response) {
-            if (response.success) {
-                alert('✅ Éxito: ' + response.message);
-                $('#cotizacionModal').modal('hide');
-                window.location.reload(); // Recargar la tabla para mostrar la nueva póliza
-            } else {
-                alert('❌ Error al crear: ' + response.message);
-                saveButton.text('Guardar Póliza').prop('disabled', false);
-            }
-        },
-        error: function(jqXHR, textStatus, errorThrown) {
-            alert('❌ Error de comunicación con el servidor al crear: ' + textStatus);
-            saveButton.text('Guardar Póliza').prop('disabled', false);
-        }
-    });
-});
-
-
-// ==============================================================================
-// 2. LÓGICA DE EDICIÓN (Modal: #edicionPolizaModal)
-// ==============================================================================
-
-// A. Cargar datos al hacer clic en el botón "Editar" de la tabla
-$('#carteraTable').on('click', '.btn-edit-poliza', function(e) {
-    e.preventDefault(); 
-    
-    var id_poliza = $(this).data('id');
-    var editModal = $('#edicionPolizaModal'); // <-- Referencia correcta al modal
-
-    // Muestra un mensaje de carga
-    $('#id_poliza_edicion').val(id_poliza); 
-    $('#edicionPolizaModalLabel').text('Cargando Póliza ID #' + id_poliza + '...');
-
-    // Oculta el modal, en caso de que haya habido conflicto al eliminar data-toggle
-    editModal.modal('hide'); 
-
-    // Cargar los datos de la póliza específica vía AJAX (GET)
-    $.ajax({
-        url: 'controlador/controladorPoliza.php',
-        type: 'GET', 
-        data: { accion: 'obtener_poliza', id_poliza: id_poliza }, 
-        dataType: 'json',
-        success: function(response) {
-            if (response.success) {
-                var data = response.data;
-                
-                // 1. Llenar los campos (Asegúrate que los IDs de los campos son correctos)
-                $('#cliente_poliza_edicion').val(data.nombre_cliente + ' (' + data.cedula_cliente + ')'); 
-                $('#numero_poliza_edicion').val(data.numero_poliza);
-                $('#fecha_vencimiento_edicion').val(data.fecha_vencimiento);
-                $('#prima_anual_edicion').val(data.prima_anual);
-                $('#estado_edicion').val(data.estado); 
-                
-                $('#edicionPolizaModalLabel').text('Editar Póliza ID #' + id_poliza);
-                
-                // 🔑 PASO CLAVE: ABRIR EL MODAL SOLO EN ÉXITO
-                editModal.modal('show'); 
-            } else {
-                // Caso de falla: Muestra el error
-                alert('❌ Error al cargar datos: ' + response.message);
-            }
-        },
-        error: function(jqXHR, textStatus, errorThrown) {
-            alert('❌ Error de comunicación con el servidor al cargar la póliza: ' + textStatus);
-        }
-    });
-});
-
-// B. El manejo del envío del formulario de Edición (Guardar Cambios)
-// Este código permanece igual, ya que solo se ejecuta después de abrir el modal y hacer clic en Guardar.
-$('#editarPolizaForm').on('submit', function(e) {
-    e.preventDefault();
-    
-    var form = $(this); 
-    var saveButton = $('#saveEdicionPoliza');
-    
-    if (!form[0].checkValidity()) {
-        form[0].reportValidity();
-        return;
-    }
-    
-    // Acción Fija para el modal de Edición: actualizar_poliza
-    var data = form.serialize() + '&accion=actualizar_poliza'; 
-    
-    $.ajax({
-        url: 'controlador/controladorPoliza.php', 
-        type: 'POST',
-        data: data,
-        dataType: 'json',
-        beforeSend: function() {
-            saveButton.text('Procesando...').prop('disabled', true);
-        },
-        success: function(response) {
-            if (response.success) {
-                alert('✅ Éxito: ' + response.message);
-                $('#edicionPolizaModal').modal('hide');
-                window.location.reload(); 
-            } else {
-                alert('❌ Error al actualizar: ' + response.message);
-                saveButton.text('Guardar Cambios').prop('disabled', false);
-            }
-        },
-        error: function(jqXHR, textStatus, errorThrown) {
-            alert('❌ Error de comunicación con el servidor al guardar cambios: ' + textStatus);
-            saveButton.text('Guardar Cambios').prop('disabled', false);
-        }
-    });
-});
-
-});
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})($configJson);
 </script>
 EOT;
 require_once __DIR__ . '/parte_inferior.php';

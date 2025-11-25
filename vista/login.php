@@ -5,6 +5,7 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 
 require_once '../modelo/modeloUsuario.php'; 
+require_once '../modelo/modeloPermiso.php';
 
 // Inicializa la variable de error
 $error = '';
@@ -36,9 +37,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['usuario_conectado'] = true;
             // Guardamos el objeto Usuario completo para acceso futuro
             $_SESSION['datos_usuario'] = $usuario; 
+            $_SESSION['permisos_usuario'] = [];
             
            
             $rol = $usuario->getNombreRol();
+
+            if ($rol === 'agente') {
+                try {
+                    $permisoModelo = new ModeloPermiso();
+                    $permisosActivos = $permisoModelo->obtenerNombresPermisosDeAgente($usuario->getCedula());
+                    if (is_array($permisosActivos)) {
+                        $_SESSION['permisos_usuario'] = $permisosActivos;
+                    }
+                } catch (Exception $ex) {
+                    error_log('No se pudieron cargar los permisos del agente: ' . $ex->getMessage());
+                    $_SESSION['permisos_usuario'] = [];
+                }
+            }
 
             switch ($rol) {
                 case 'administrador':
