@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 26-11-2025 a las 03:43:49
+-- Tiempo de generación: 26-11-2025 a las 12:56:13
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -96,6 +96,23 @@ INSERT INTO `agente_permiso` (`cedula_agente`, `id_permiso`, `tiene_permiso`) VA
 ('V12345678', 16, 1),
 ('V12345678', 17, 1),
 ('V12345678', 18, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `asegurado`
+--
+
+CREATE TABLE `asegurado` (
+  `id_asegurado` int(10) UNSIGNED NOT NULL,
+  `id_poliza` int(10) UNSIGNED NOT NULL,
+  `cedula` varchar(20) DEFAULT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `apellido` varchar(100) NOT NULL,
+  `fecha_nacimiento` date NOT NULL,
+  `parentesco` varchar(100) DEFAULT NULL,
+  `sexo` enum('M','F') NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -478,6 +495,13 @@ ALTER TABLE `agente_permiso`
   ADD KEY `fk_permiso` (`id_permiso`);
 
 --
+-- Indices de la tabla `asegurado`
+--
+ALTER TABLE `asegurado`
+  ADD PRIMARY KEY (`id_asegurado`),
+  ADD KEY `fk_asegurado_poliza` (`id_poliza`);
+
+--
 -- Indices de la tabla `categoria_poliza`
 --
 ALTER TABLE `categoria_poliza`
@@ -579,6 +603,12 @@ ALTER TABLE `usuario`
 --
 
 --
+-- AUTO_INCREMENT de la tabla `asegurado`
+--
+ALTER TABLE `asegurado`
+  MODIFY `id_asegurado` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `categoria_poliza`
 --
 ALTER TABLE `categoria_poliza`
@@ -654,6 +684,12 @@ ALTER TABLE `agente`
 ALTER TABLE `agente_permiso`
   ADD CONSTRAINT `fk_cedula_agente_permiso` FOREIGN KEY (`cedula_agente`) REFERENCES `usuario` (`cedula`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_permiso` FOREIGN KEY (`id_permiso`) REFERENCES `permiso` (`id_permiso`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `asegurado`
+--
+ALTER TABLE `asegurado`
+  ADD CONSTRAINT `fk_asegurado_poliza` FOREIGN KEY (`id_poliza`) REFERENCES `poliza` (`id_poliza`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `cliente`
