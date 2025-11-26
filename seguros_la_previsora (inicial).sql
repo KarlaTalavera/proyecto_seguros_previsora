@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 26-11-2025 a las 03:43:49
+-- Tiempo de generación: 10-11-2025 a las 18:51:09
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -20,46 +20,6 @@ SET time_zone = "+00:00";
 --
 -- Base de datos: `seguros_la_previsora`
 --
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `administrador`
---
-
-CREATE TABLE `administrador` (
-  `cedula_admin` varchar(20) NOT NULL,
-  `nombre` varchar(100) NOT NULL,
-  `apellido` varchar(100) NOT NULL,
-  `telefono` varchar(20) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `administrador`
---
-
-INSERT INTO `administrador` (`cedula_admin`, `nombre`, `apellido`, `telefono`) VALUES
-('V31843813', 'Karla', 'Talavera', '04121365498');
-
--- --------------------------------------------------------
-
---
--- Estructura de tabla para la tabla `agente`
---
-
-CREATE TABLE `agente` (
-  `cedula_agente` varchar(20) NOT NULL,
-  `nombre` varchar(100) NOT NULL,
-  `apellido` varchar(100) NOT NULL,
-  `telefono` varchar(20) DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
---
--- Volcado de datos para la tabla `agente`
---
-
-INSERT INTO `agente` (`cedula_agente`, `nombre`, `apellido`, `telefono`) VALUES
-('V12345678', 'Santiago', 'Rodriguez', '04247654321');
 
 -- --------------------------------------------------------
 
@@ -126,9 +86,6 @@ INSERT INTO `categoria_poliza` (`id_categoria`, `nombre`) VALUES
 CREATE TABLE `cliente` (
   `id_cliente` int(10) UNSIGNED NOT NULL,
   `cedula_asegurado` varchar(20) NOT NULL,
-  `nombre` varchar(100) NOT NULL,
-  `apellido` varchar(100) NOT NULL,
-  `telefono` varchar(20) DEFAULT NULL,
   `direccion` varchar(255) DEFAULT NULL,
   `fecha_nacimiento` date DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -137,9 +94,9 @@ CREATE TABLE `cliente` (
 -- Volcado de datos para la tabla `cliente`
 --
 
-INSERT INTO `cliente` (`id_cliente`, `cedula_asegurado`, `nombre`, `apellido`, `telefono`, `direccion`, `fecha_nacimiento`) VALUES
-(1, 'V20000001', 'Juan', 'Pérez', '04141234567', 'Av. Principal, Caracas', '1985-04-12'),
-(2, 'V20000002', 'María', 'Gómez', '04147654321', 'Calle Falsa 123, Valencia', '1990-07-02');
+INSERT INTO `cliente` (`id_cliente`, `cedula_asegurado`, `direccion`, `fecha_nacimiento`) VALUES
+(1, 'V20000001', 'Av. Principal, Caracas', '1985-04-12'),
+(2, 'V20000002', 'Calle Falsa 123, Valencia', '1990-07-02');
 
 -- --------------------------------------------------------
 
@@ -437,8 +394,12 @@ INSERT INTO `tipo_poliza_cobertura` (`id_tipo_poliza`, `id_cobertura`) VALUES
 
 CREATE TABLE `usuario` (
   `cedula` varchar(20) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `apellido` varchar(100) NOT NULL,
   `email` varchar(255) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
+  `telefono` varchar(20) DEFAULT NULL,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
   `activo` tinyint(1) DEFAULT 1,
   `id_rol` int(10) UNSIGNED NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
@@ -447,28 +408,16 @@ CREATE TABLE `usuario` (
 -- Volcado de datos para la tabla `usuario`
 --
 
-INSERT INTO `usuario` (`cedula`, `email`, `password_hash`, `activo`, `id_rol`) VALUES
-('V12345678', 'santi@previsora.com', '$2y$10$v8dGm8Hq4saG0j/5lVlKaOqITPTvNAwonfzRjWLanH3oZowlTeCly', 1, 2),
-('V20000001', 'juan.perez@example.com', '$2y$10$xQNNf3KGSblr4UhPyxzmM.edawtvKfeb1t4xDk0K3K9r40GMDRQR2', 1, 3),
-('V20000002', 'maria.gomez@example.com', '$2y$10$xQNNf3KGSblr4UhPyxzmM.edawtvKfeb1t4xDk0K3K9r40GMDRQR2', 1, 3),
-('V31843813', 'admin@previsora.com', '$2y$10$xQNNf3KGSblr4UhPyxzmM.edawtvKfeb1t4xDk0K3K9r40GMDRQR2', 1, 1),
-('V31894578', 'saraleon030405@gmail.com', '$2y$10$oF2cREtn772dCHSCiUR7LuHKBGxLv83rE5edOAzRFkBsWUtsGfI9i', 1, 3);
+INSERT INTO `usuario` (`cedula`, `nombre`, `apellido`, `email`, `password_hash`, `telefono`, `fecha_creacion`, `activo`, `id_rol`) VALUES
+('V12345678', 'Santiago', 'Rodriguez', 'santi@previsora.com', '$2y$10$v8dGm8Hq4saG0j/5lVlKaOqITPTvNAwonfzRjWLanH3oZowlTeCly', '04247654321', '2025-11-04 01:17:40', 1, 2),
+('V20000001', 'Juan', 'Pérez', 'juan.perez@example.com', '$2y$10$xQNNf3KGSblr4UhPyxzmM.edawtvKfeb1t4xDk0K3K9r40GMDRQR2', '04141234567', '2025-11-05 19:27:18', 1, 3),
+('V20000002', 'María', 'Gómez', 'maria.gomez@example.com', '$2y$10$xQNNf3KGSblr4UhPyxzmM.edawtvKfeb1t4xDk0K3K9r40GMDRQR2', '04147654321', '2025-11-05 19:27:18', 1, 3),
+('V31843813', 'Karla', 'Talavera', 'admin@previsora.com', '$2y$10$xQNNf3KGSblr4UhPyxzmM.edawtvKfeb1t4xDk0K3K9r40GMDRQR2', '04121365498', '2025-11-04 01:17:40', 1, 1),
+('V31894578', 'Sarai', 'Leon', 'saraleon030405@gmail.com', '$2y$10$oF2cREtn772dCHSCiUR7LuHKBGxLv83rE5edOAzRFkBsWUtsGfI9i', '04121122334', '2025-11-04 01:17:40', 1, 3);
 
 --
 -- Índices para tablas volcadas
 --
-
---
--- Indices de la tabla `administrador`
---
-ALTER TABLE `administrador`
-  ADD PRIMARY KEY (`cedula_admin`);
-
---
--- Indices de la tabla `agente`
---
-ALTER TABLE `agente`
-  ADD PRIMARY KEY (`cedula_agente`);
 
 --
 -- Indices de la tabla `agente_permiso`
@@ -615,6 +564,7 @@ ALTER TABLE `poliza_cuota`
   MODIFY `id_cuota` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
+--
 -- AUTO_INCREMENT de la tabla `rol`
 --
 ALTER TABLE `rol`
@@ -635,18 +585,6 @@ ALTER TABLE `tipo_poliza`
 --
 -- Restricciones para tablas volcadas
 --
-
---
--- Filtros para la tabla `administrador`
---
-ALTER TABLE `administrador`
-  ADD CONSTRAINT `fk_admin_usuario` FOREIGN KEY (`cedula_admin`) REFERENCES `usuario` (`cedula`) ON DELETE CASCADE;
-
---
--- Filtros para la tabla `agente`
---
-ALTER TABLE `agente`
-  ADD CONSTRAINT `fk_agente_usuario` FOREIGN KEY (`cedula_agente`) REFERENCES `usuario` (`cedula`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `agente_permiso`
