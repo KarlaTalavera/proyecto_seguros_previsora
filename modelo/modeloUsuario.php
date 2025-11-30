@@ -89,12 +89,25 @@ class modeloUsuario {
             return false;
         }
         
-        $sql = "SELECT 
-                    u.*, r.nombre_rol 
+       $sql = "SELECT 
+                    u.cedula,
+                    u.email,
+                    u.password_hash,
+                    u.activo,
+                    u.id_rol,
+                    r.nombre_rol,
+                    -- Recuperamos datos personales dependiendo de donde existan
+                    COALESCE(ag.nombre, ad.nombre, cl.nombre) AS nombre,
+                    COALESCE(ag.apellido, ad.apellido, cl.apellido) AS apellido,
+                    COALESCE(ag.telefono, ad.telefono, cl.telefono) AS telefono
                 FROM 
                     usuario u
                 JOIN 
                     rol r ON u.id_rol = r.id_rol
+                -- Joins a las tablas específicas
+                LEFT JOIN agente ag ON u.cedula = ag.cedula_agente
+                LEFT JOIN administrador ad ON u.cedula = ad.cedula_admin
+                LEFT JOIN cliente cl ON u.cedula = cl.cedula_asegurado
                 WHERE 
                     u.cedula = :identificador OR u.email = :identificador
                 LIMIT 1";
@@ -104,7 +117,7 @@ class modeloUsuario {
             $stmt->bindParam(':identificador', $identificador);
             $stmt->execute();
             
-            return $stmt->fetch(PDO::FETCH_ASSOC); // Usamos FETCH_ASSOC para consistencia
+            return $stmt->fetch(PDO::FETCH_ASSOC); 
             
         } catch (\PDOException $e) {
             error_log("Error de DB al buscar usuario: " . $e->getMessage());
@@ -366,18 +379,38 @@ class modeloUsuario {
         if (!$this->db) return false;
 
         // CONSULTA CLAVE: JOIN con la tabla 'rol'
-        $sql = "SELECT u.cedula, u.nombre, u.apellido, u.email, u.telefono, r.nombre AS nombre_rol 
-                FROM usuario u 
-                JOIN rol r ON u.id_rol = r.id_rol 
-                WHERE u.cedula = :cedula"; 
+       $sql = "SELECT 
+                    u.cedula,
+                    u.email,
+                    u.password_hash,
+                    u.activo,
+                    u.id_rol,
+                    r.nombre_rol,
+                    -- Recuperamos datos personales dependiendo de donde existan
+                    COALESCE(ag.nombre, ad.nombre, cl.nombre) AS nombre,
+                    COALESCE(ag.apellido, ad.apellido, cl.apellido) AS apellido,
+                    COALESCE(ag.telefono, ad.telefono, cl.telefono) AS telefono
+                FROM 
+                    usuario u
+                JOIN 
+                    rol r ON u.id_rol = r.id_rol
+                -- Joins a las tablas específicas
+                LEFT JOIN agente ag ON u.cedula = ag.cedula_agente
+                LEFT JOIN administrador ad ON u.cedula = ad.cedula_admin
+                LEFT JOIN cliente cl ON u.cedula = cl.cedula_asegurado
+                WHERE 
+                    u.cedula = :identificador OR u.email = :identificador
+                LIMIT 1";
 
         try {
             $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':cedula', $cedula_agente);
+            $stmt->bindParam(':identificador', $identificador);
             $stmt->execute();
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            return $stmt->fetch(PDO::FETCH_ASSOC); 
+            
         } catch (\PDOException $e) {
-            error_log("Error de DB al obtener agente loggeado: " . $e->getMessage());
+            error_log("Error de DB al buscar usuario: " . $e->getMessage());
             return false;
         }
     }

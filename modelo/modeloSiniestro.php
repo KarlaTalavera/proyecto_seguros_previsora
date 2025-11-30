@@ -35,16 +35,15 @@ class ModeloSiniestro {
         $sql = "SELECT 
                     s.id_siniestro AS id,
                     p.numero_poliza AS poliza,
-                    CONCAT(u_cliente.nombre, ' ', u_cliente.apellido) AS cliente,
-                    s.fecha_reporte AS fecha_incidente,  -- Mapeado
-                    s.monto_estimado AS monto_reclamo, -- Mapeado
-                    s.estado AS estado                 -- Mapeado
+                    CONCAT(c.nombre, ' ', c.apellido) AS cliente, 
+                    s.fecha_reporte AS fecha_incidente,
+                    s.monto_estimado AS monto_reclamo,
+                    s.estado AS estado
                 FROM siniestro s
                 JOIN poliza p ON s.id_poliza = p.id_poliza
                 JOIN cliente c ON p.id_cliente = c.id_cliente
-                JOIN usuario u_cliente ON c.cedula_asegurado = u_cliente.cedula
                 WHERE p.cedula_agente = :cedula_agente
-                ORDER BY s.fecha_reporte DESC"; // Ordenado por fecha_reporte
+                ORDER BY s.fecha_reporte DESC";
 
         try {
             $stmt = $this->db->prepare($sql);
@@ -61,19 +60,18 @@ class ModeloSiniestro {
 
         $sql = "SELECT 
                     s.id_siniestro, s.id_poliza, 
-                    s.fecha_reporte AS fecha_incidente, -- Mapeado
+                    s.fecha_reporte AS fecha_incidente,
                     s.descripcion, 
-                    s.estado AS estado,                 -- Mapeado
+                    s.estado AS estado,
                     p.numero_poliza,
-                    CONCAT(u_cliente.nombre, ' ', u_cliente.apellido) AS nombre_cliente, 
-                    u_cliente.cedula AS cedula_cliente,
-                    s.monto_estimado AS monto_reclamo, -- Mapeado
-                    0.00 AS monto_pago,             -- Campo no existe, se envia 0
-                    NULL AS fecha_pago              -- Campo no existe, se envia null
+                    CONCAT(c.nombre, ' ', c.apellido) AS nombre_cliente,
+                    c.cedula_asegurado AS cedula_cliente,
+                    s.monto_estimado AS monto_reclamo,
+                    0.00 AS monto_pago,
+                    NULL AS fecha_pago
                 FROM siniestro s
                 JOIN poliza p ON s.id_poliza = p.id_poliza
                 JOIN cliente c ON p.id_cliente = c.id_cliente
-                JOIN usuario u_cliente ON c.cedula_asegurado = u_cliente.cedula
                 WHERE s.id_siniestro = :id_siniestro";
 
         try {
@@ -191,11 +189,10 @@ class ModeloSiniestro {
         if (!$this->db) return false;
 
         $sql = "SELECT p.id_poliza, p.numero_poliza, 
-                       CONCAT(u.nombre, ' ', u.apellido) as nombre_cliente,
+                       CONCAT(c.nombre, ' ', c.apellido) as nombre_cliente,
                        t.nombre as tipo_poliza
                 FROM poliza p
                 JOIN cliente c ON p.id_cliente = c.id_cliente
-                JOIN usuario u ON c.cedula_asegurado = u.cedula
                 JOIN tipo_poliza t ON p.id_tipo_poliza = t.id_tipo_poliza
                 WHERE p.cedula_agente = :cedula_agente 
                 AND p.estado = 'ACTIVA'";

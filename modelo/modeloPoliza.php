@@ -89,7 +89,11 @@ class ModeloPoliza {
     public function obtenerAgentesActivos() {
         if (!$this->db) return [];
         try {
-            $sql = "SELECT cedula, nombre, apellido FROM usuario WHERE id_rol = 2 AND activo = 1 ORDER BY nombre, apellido";
+            $sql = "SELECT u.cedula, a.nombre, a.apellido 
+                    FROM usuario u 
+                    JOIN agente a ON u.cedula = a.cedula_agente
+                    WHERE u.id_rol = 2 AND u.activo = 1 
+                    ORDER BY a.nombre, a.apellido";
             $stmt = $this->db->query($sql);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -101,10 +105,9 @@ class ModeloPoliza {
     public function obtenerClientes() {
         if (!$this->db) return [];
         try {
-            $sql = 'SELECT c.id_cliente, u.cedula, u.nombre, u.apellido
+            $sql = 'SELECT c.id_cliente, c.cedula_asegurado AS cedula, c.nombre, c.apellido
                     FROM cliente c
-                    JOIN usuario u ON c.cedula_asegurado = u.cedula
-                    ORDER BY u.nombre, u.apellido';
+                    ORDER BY c.nombre, c.apellido';
             $stmt = $this->db->query($sql);
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
@@ -133,8 +136,10 @@ class ModeloPoliza {
                         p.estado,
                         cat.nombre AS categoria,
                         tp.nombre AS ramo,
+                        -- Obtenemos nombre del agente desde la tabla 'agente'
                         COALESCE(CONCAT(ag.nombre, ' ', ag.apellido), p.cedula_agente) AS agente,
-                        COALESCE(CONCAT(cli.nombre, ' ', cli.apellido), 'Sin cliente') AS cliente,
+                        -- Obtenemos nombre del cliente desde la tabla 'cliente'
+                        COALESCE(CONCAT(cl.nombre, ' ', cl.apellido), 'Sin cliente') AS cliente,
                         dp.fecha_inicio,
                         dp.fecha_fin,
                         dp.monto_prima_total,
@@ -143,9 +148,10 @@ class ModeloPoliza {
                     JOIN tipo_poliza tp ON p.id_tipo_poliza = tp.id_tipo_poliza
                     JOIN categoria_poliza cat ON tp.id_categoria = cat.id_categoria
                     JOIN detalle_poliza dp ON p.id_poliza = dp.id_poliza
-                    LEFT JOIN usuario ag ON p.cedula_agente = ag.cedula
+                    -- JOIN correcto para Agente
+                    LEFT JOIN agente ag ON p.cedula_agente = ag.cedula_agente
+                    -- JOIN correcto para Cliente
                     LEFT JOIN cliente cl ON p.id_cliente = cl.id_cliente
-                    LEFT JOIN usuario cli ON cl.cedula_asegurado = cli.cedula
                     LEFT JOIN poliza_cobertura pc ON p.id_poliza = pc.id_poliza
                     LEFT JOIN cobertura cb ON pc.id_cobertura = cb.id_cobertura
                     WHERE 1 = 1 AND p.estado <> 'ELIMINADA'";
@@ -204,6 +210,7 @@ class ModeloPoliza {
                         tp.nombre AS ramo,
                         p.id_cliente,
                         p.cedula_agente,
+                        -- Datos del Agente
                         COALESCE(CONCAT(ag.nombre, ' ', ag.apellido), p.cedula_agente) AS agente_nombre,
                         dp.fecha_inicio,
                         dp.fecha_fin,
@@ -212,15 +219,17 @@ class ModeloPoliza {
                         dp.monto_cuota,
                         dp.fecha_primer_vencimiento,
                         dp.frecuencia_pago,
-                        COALESCE(CONCAT(cli.nombre, ' ', cli.apellido), '') AS cliente_nombre,
-                        cli.cedula AS cliente_cedula
+                        -- Datos del Cliente
+                        COALESCE(CONCAT(cl.nombre, ' ', cl.apellido), '') AS cliente_nombre,
+                        cl.cedula_asegurado AS cliente_cedula
                     FROM poliza p
                     JOIN tipo_poliza tp ON p.id_tipo_poliza = tp.id_tipo_poliza
                     JOIN categoria_poliza cat ON tp.id_categoria = cat.id_categoria
                     JOIN detalle_poliza dp ON p.id_poliza = dp.id_poliza
+                    -- JOIN Cliente directo
                     LEFT JOIN cliente cl ON p.id_cliente = cl.id_cliente
-                    LEFT JOIN usuario cli ON cl.cedula_asegurado = cli.cedula
-                    LEFT JOIN usuario ag ON p.cedula_agente = ag.cedula
+                    -- JOIN Agente directo
+                    LEFT JOIN agente ag ON p.cedula_agente = ag.cedula_agente
                     WHERE p.id_poliza = :id
                     LIMIT 1";
 
@@ -232,7 +241,9 @@ class ModeloPoliza {
             if (!$poliza) {
                 return null;
             }
-
+            
+            // ... (El resto de la lógica de formateo se mantiene igual) ...
+            
             $poliza['id_poliza'] = (int)$poliza['id_poliza'];
             $poliza['id_tipo_poliza'] = (int)$poliza['id_tipo_poliza'];
             $poliza['id_categoria'] = isset($poliza['id_categoria']) ? (int)$poliza['id_categoria'] : null;
@@ -626,10 +637,9 @@ class ModeloPoliza {
             return null;
         }
 
-        $sql = "SELECT c.id_cliente
-                FROM cliente c
-                JOIN usuario u ON c.cedula_asegurado = u.cedula
-                WHERE TRIM(u.cedula) = :cedula";
+        $sql = "SELECT id_cliente
+                FROM cliente 
+                WHERE cedula_asegurado = :cedula";
 
         try {
             $stmt = $this->db->prepare($sql);
