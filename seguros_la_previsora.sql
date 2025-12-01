@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 26-11-2025 a las 12:56:13
+-- Tiempo de generación: 01-12-2025 a las 18:48:44
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -457,19 +457,20 @@ CREATE TABLE `usuario` (
   `email` varchar(255) NOT NULL,
   `password_hash` varchar(255) NOT NULL,
   `activo` tinyint(1) DEFAULT 1,
-  `id_rol` int(10) UNSIGNED NOT NULL
+  `id_rol` int(10) UNSIGNED NOT NULL,
+  `foto_perfil` varchar(255) DEFAULT 'undraw_profile.svg'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- Volcado de datos para la tabla `usuario`
 --
 
-INSERT INTO `usuario` (`cedula`, `email`, `password_hash`, `activo`, `id_rol`) VALUES
-('V12345678', 'santi@previsora.com', '$2y$10$v8dGm8Hq4saG0j/5lVlKaOqITPTvNAwonfzRjWLanH3oZowlTeCly', 1, 2),
-('V20000001', 'juan.perez@example.com', '$2y$10$xQNNf3KGSblr4UhPyxzmM.edawtvKfeb1t4xDk0K3K9r40GMDRQR2', 1, 3),
-('V20000002', 'maria.gomez@example.com', '$2y$10$xQNNf3KGSblr4UhPyxzmM.edawtvKfeb1t4xDk0K3K9r40GMDRQR2', 1, 3),
-('V31843813', 'admin@previsora.com', '$2y$10$xQNNf3KGSblr4UhPyxzmM.edawtvKfeb1t4xDk0K3K9r40GMDRQR2', 1, 1),
-('V31894578', 'saraleon030405@gmail.com', '$2y$10$oF2cREtn772dCHSCiUR7LuHKBGxLv83rE5edOAzRFkBsWUtsGfI9i', 1, 3);
+INSERT INTO `usuario` (`cedula`, `email`, `password_hash`, `activo`, `id_rol`, `foto_perfil`) VALUES
+('V12345678', 'santi@previsora.com', '$2y$10$v8dGm8Hq4saG0j/5lVlKaOqITPTvNAwonfzRjWLanH3oZowlTeCly', 1, 2, 'undraw_profile.svg'),
+('V20000001', 'juan.perez@example.com', '$2y$10$xQNNf3KGSblr4UhPyxzmM.edawtvKfeb1t4xDk0K3K9r40GMDRQR2', 1, 3, 'undraw_profile.svg'),
+('V20000002', 'maria.gomez@example.com', '$2y$10$xQNNf3KGSblr4UhPyxzmM.edawtvKfeb1t4xDk0K3K9r40GMDRQR2', 1, 3, 'undraw_profile.svg'),
+('V31843813', 'admin@previsora.com', '$2y$10$xQNNf3KGSblr4UhPyxzmM.edawtvKfeb1t4xDk0K3K9r40GMDRQR2', 1, 1, 'undraw_profile.svg'),
+('V31894578', 'saraleon030405@gmail.com', '$2y$10$oF2cREtn772dCHSCiUR7LuHKBGxLv83rE5edOAzRFkBsWUtsGfI9i', 1, 3, 'undraw_profile.svg');
 
 --
 -- Índices para tablas volcadas
