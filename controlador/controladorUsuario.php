@@ -49,6 +49,48 @@ switch ($accion) {
 
     default:
         $respuesta = ['success' => false, 'message' => 'Acción no reconocida.'];
+
+        break;
+    
+    case 'actualizar_perfil':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $respuesta['message'] = 'Método no permitido';
+            break;
+        }
+
+        // Recibir datos
+        $datos = [
+            'cedula' => $_POST['cedula'] ?? '',
+            'nombre' => $_POST['nombre'] ?? '',
+            'apellido' => $_POST['apellido'] ?? '',
+            'email' => $_POST['email'] ?? '',
+            'telefono' => $_POST['telefono'] ?? '',
+            'password_nueva' => $_POST['password'] ?? '', // Puede estar vacío
+            'rol_nombre' => $_POST['rol_actual'] ?? '' // Importante enviar esto desde el form
+        ];
+
+        // Verificar sesión por seguridad (que quien edita sea el dueño)
+        if (!isset($_SESSION['datos_usuario']) || $_SESSION['datos_usuario']->getCedula() !== $datos['cedula']) {
+            $respuesta = ['success' => false, 'message' => 'Error de seguridad: No puede editar este perfil.'];
+            break;
+        }
+
+        // Manejo del archivo (foto)
+        $foto = $_FILES['foto_perfil'] ?? null;
+
+        $resultado = $modelo->actualizarPerfil($datos, $foto);
+        
+        if ($resultado['success']) {
+            // Actualizar la sesión con los nuevos datos para que se refleje de inmediato
+            // (Esto es un truco rápido, lo ideal sería recargar el objeto usuario completo)
+            $_SESSION['datos_usuario']->setNombre($datos['nombre']);
+            $_SESSION['datos_usuario']->setApellido($datos['apellido']);
+            $_SESSION['datos_usuario']->setEmail($datos['email']);
+            $_SESSION['datos_usuario']->setTelefono($datos['telefono']);
+        }
+
+        $respuesta = $resultado;
+        break;
 }
 
 echo json_encode($respuesta);

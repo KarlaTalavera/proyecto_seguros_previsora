@@ -425,5 +425,87 @@ class modeloUsuario {
         }
     }
 
+    public function actualizarPerfil(array $datos, array $archivoFoto = null) {
+        if (!$this->db) return ['success' => false, 'message' => 'Error de conexión.'];
+
+        $cedula = $datos['cedula'];
+        $rol_nombre = strtolower($datos['rol_nombre']); // Necesitamos saber si es agente, admin, etc.
+        
+        try {
+            $this->db->beginTransaction();
+
+            // 1. Manejo de la Foto (Si se subió una nueva)
+            $sqlFoto = "";
+            $paramsUsuario = [
+                ':email' => $datos['email'],
+                ':cedula' => $cedula
+            ];
+
+            if ($archivoFoto && $archivoFoto['error'] === UPLOAD_ERR_OK) {
+                // Lógica simple de subida
+                $ext = pathinfo($archivoFoto['name'], PATHINFO_EXTENSION);
+                $nombreArchivo = 'perfil_' . $cedula . '_' . time() . '.' . $ext;
+                $rutaDestino = dirname(__DIR__) . '/assets/img/usuarios/' . $nombreArchivo;
+                
+                if (move_uploaded_file($archivoFoto['tmp_name'], $rutaDestino)) {
+                    $sqlFoto = ", foto_perfil = :foto";
+                    $paramsUsuario[':foto'] = $nombreArchivo;
+                }
+            }
+
+            // 2. Manejo de Contraseña (Solo si el usuario escribió una nueva)
+            $sqlPass = "";
+            if (!empty($datos['password_nueva'])) {
+                $sqlPass = ", password_hash = :pass";
+                $paramsUsuario[':pass'] = password_hash($datos['password_nueva'], PASSWORD_DEFAULT);
+            }
+
+            // 3. Actualizar tabla USUARIO (Datos comunes)
+            $sqlUsuario = "UPDATE usuario SET email = :email $sqlFoto $sqlPass WHERE cedula = :cedula";
+            $stmtU = $this->db->prepare($sqlUsuario);
+            $stmtU->execute($paramsUsuario);
+
+            // 4. Actualizar tabla ESPECÍFICA (Datos personales)
+            // Aquí decidimos a qué tabla ir según el rol
+            $tablaDestino = match ($rol_nombre) {
+                'administrador' => 'administrador',
+                'agente'        => 'agente',
+                'asegurado'     => 'cliente', // Ojo: en tu BD la tabla es 'cliente'
+                default         => null
+            };
+
+            if ($tablaDestino) {
+                // El nombre del campo ID varía: cedula_agente, cedula_admin, cedula_asegurado
+                $campoClave = match ($tablaDestino) {
+                    'administrador' => 'cedula_admin',
+                    'agente'        => 'cedula_agente',
+                    'cliente'       => 'cedula_asegurado',
+                };
+
+                $sqlRol = "UPDATE $tablaDestino SET 
+                           nombre = :nombre, 
+                           apellido = :apellido, 
+                           telefono = :telefono 
+                           WHERE $campoClave = :cedula";
+                
+                $stmtR = $this->db->prepare($sqlRol);
+                $stmtR->execute([
+                    ':nombre'   => $datos['nombre'],
+                    ':apellido' => $datos['apellido'],
+                    ':telefono' => $datos['telefono'],
+                    ':cedula'   => $cedula
+                ]);
+            }
+
+            $this->db->commit();
+            return ['success' => true, 'message' => 'Perfil actualizado correctamente.', 'foto' => $paramsUsuario[':foto'] ?? null];
+
+        } catch (PDOException $e) {
+            $this->db->rollBack();
+            error_log("Error actualizarPerfil: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error al guardar los datos: ' . $e->getMessage()];
+        }
+    }
+
 
 }
