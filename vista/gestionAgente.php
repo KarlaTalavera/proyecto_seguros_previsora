@@ -6,14 +6,15 @@ require_once __DIR__ . '/parte_superior.php';
 require_once dirname(__DIR__) . '/modelo/modeloUsuario.php';
 
 $modeloUsuario = new ModeloUsuario();
-$todos_los_usuarios = $modeloUsuario->obtenerTodosLosUsuarios();
+// Usamos el nuevo método específico para agentes
+$agentes = $modeloUsuario->obtenerTodosLosAgentes();
 
-// FIX: Hacer el filtro case-insensitive y asegurarse de que es un array
-$agentes = [];
-if (is_array($todos_los_usuarios)) {
-    $agentes = array_filter($todos_los_usuarios, function($usuario) {
-        return isset($usuario['rol']) && strtolower($usuario['rol']) === 'agente';
-    });
+// Depuración: Muestra si hay error o no hay datos
+if ($agentes === false) {
+    echo '<div class="alert alert-danger">Error al cargar los agentes.</div>';
+    $agentes = []; // Para evitar errores en el foreach
+} elseif (empty($agentes)) {
+    echo '<div class="alert alert-info">No hay agentes registrados.</div>';
 }
 
 ?>
@@ -247,14 +248,16 @@ if (is_array($todos_los_usuarios)) {
                 <td>
                   <button class="btn btn-sm btn-primary editAgentBtn" 
                           data-cedula="<?php echo htmlspecialchars($agente['cedula']); ?>"
-                             data-nombre="<?php echo htmlspecialchars($agente['nombre']); ?>"
-                             data-apellido="<?php echo htmlspecialchars($agente['apellido']); ?>"
-                             data-email="<?php echo htmlspecialchars($agente['email']); ?>"
-                             data-telefono="<?php echo htmlspecialchars($agente['telefono']); ?>"
-                             data-toggle="modal" 
-                             data-target="#modalEditarAgente"
-                             title="Editar Agente">Editar</button>
-                  <button class="btn btn-sm btn-danger" title="Eliminar Agente">Eliminar</button>
+                          data-nombre="<?php echo htmlspecialchars($agente['nombre']); ?>"
+                          data-apellido="<?php echo htmlspecialchars($agente['apellido']); ?>"
+                          data-email="<?php echo htmlspecialchars($agente['email']); ?>"
+                          data-telefono="<?php echo htmlspecialchars($agente['telefono']); ?>"
+                          data-toggle="modal" 
+                          data-target="#modalEditarAgente"
+                          title="Editar Agente">Editar</button>
+                  <button class="btn btn-sm btn-danger deleteAgentBtn" 
+                          data-cedula="<?php echo htmlspecialchars($agente['cedula']); ?>"
+                          title="Eliminar Agente">Eliminar</button>
                   <button class="btn btn-sm btn-info managePermsBtn" 
                           data-cedula="<?php echo htmlspecialchars($agente['cedula']); ?>" 
                           data-nombre="<?php echo htmlspecialchars($agente['nombre'] . ' ' . $agente['apellido']); ?>"
@@ -646,38 +649,211 @@ $(document).ready(function() {
         $('#respuestaCrearAgente').show().html('<div class="alert alert-danger">Error de conexión al servidor.</div>');
       },
       complete: function() {
-        boton.prop('disabled', false).text('Guardar');
+        boton.prop('disabled', false).text('Crear Agente');
       }
     });
   });
-    $(document).on('click', '.editAgentBtn', function() {
-      const btn = $(this);
-      const cedula = btn.data('cedula');
-      const nombre = btn.data('nombre');
-      const apellido = btn.data('apellido');
-      const email = btn.data('email');
-      const telefono = btn.data('telefono');
 
-      // 1. Rellenar el título del modal
-      $('#agenteNombreEditar').text(nombre + ' ' + apellido);
+  // --- LÓGICA PARA EDITAR AGENTE ---
+  $(document).on('click', '.editAgentBtn', function() {
+    const btn = $(this);
+    const cedula = btn.data('cedula');
+    const nombre = btn.data('nombre');
+    const apellido = btn.data('apellido');
+    const email = btn.data('email');
+    const telefono = btn.data('telefono');
 
-      // 2. Rellenar los campos del formulario
-      $('#editCedulaOriginal').val(cedula); 
-      $('#editAgenteCedula').val(cedula); 
-      $('#editAgenteNombre').val(nombre);
-      $('#editAgenteApellido').val(apellido);
-      $('#editAgenteEmail').val(email);
-      $('#editAgenteTelefono').val(telefono);
-      
-      // 3. Limpiar campos de contraseña y mensajes
-      $('#editAgentePassword').val('');
-      $('#editAgentePasswordConfirm').val('');
-      $('#respuestaEditarAgente').hide().html('');
-      
-      // 4. Limpiar posibles estados de validación
-      $('#editarAgenteForm').removeClass('was-validated');
+    // 1. Rellenar el título del modal
+    $('#modalLabelEditarAgente').text('Editar Agente: ' + nombre + ' ' + apellido);
 
-      // El modal se abrirá automáticamente debido al data-toggle en el botón
+    // 2. Rellenar los campos del formulario
+    $('#editCedulaOriginal').val(cedula); 
+    $('#editAgenteCedula').val(cedula); 
+    $('#editAgenteNombre').val(nombre);
+    $('#editAgenteApellido').val(apellido);
+    $('#editAgenteEmail').val(email);
+    $('#editAgenteTelefono').val(telefono);
+    
+    // 3. Limpiar campos de contraseña y mensajes
+    $('#editAgentePassword').val('');
+    $('#editAgentePasswordConfirm').val('');
+    $('#respuestaEditarAgente').hide().html('');
+    
+    // 4. Limpiar posibles estados de validación
+    $('#editarAgenteForm').removeClass('was-validated');
   });
+
+  // Lógica para guardar cambios en edición
+  $('#btnActualizarAgente').on('click', function() {
+    const form = $('#editarAgenteForm');
+    const boton = $(this);
+    $('#respuestaEditarAgente').hide().html('');
+    boton.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Guardando...');
+
+    // Client-side validations
+    const cedulaOriginal = $('#editCedulaOriginal').val();
+    const cedula = $('#editAgenteCedula').val().trim();
+    const nombre = $('#editAgenteNombre').val().trim();
+    const apellido = $('#editAgenteApellido').val().trim();
+    const email = $('#editAgenteEmail').val().trim();
+    const telefono = $('#editAgenteTelefono').val().trim();
+    const password = $('#editAgentePassword').val() || '';
+    const passwordConfirm = $('#editAgentePasswordConfirm').val() || '';
+
+    // Required fields validation
+    if (!cedula) { showEditError('Complete la cédula.'); return; }
+    if (!nombre) { showEditError('Complete el nombre.'); return; }
+    if (!apellido) { showEditError('Complete el apellido.'); return; }
+    if (!email) { showEditError('Complete el email.'); return; }
+    if (!telefono) { showEditError('Complete el teléfono.'); return; }
+
+    // Validar formato de cédula
+    const rePersona = /^V\d{7,8}$/i;
+    const reEntidad = /^(J|G|E|EM)\d{7,8}-\d{1}$/i;
+    if (!(rePersona.test(cedula) || reEntidad.test(cedula))) { 
+      showEditError('Formato de cédula inválido. Ej: V12345678 o J12345678-9'); 
+      return; 
+    }
+
+    // Validar email
+    const reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!reEmail.test(email)) { showEditError('Email inválido.'); return; }
+
+    // Validar teléfono
+    const reTelefono = /^[0-9\-\s\+]{7,20}$/;
+    if (!reTelefono.test(telefono)) { showEditError('Teléfono inválido.'); return; }
+
+    // Validar contraseña si se proporciona
+    if (password && password.length < 8) { 
+      showEditError('La nueva contraseña debe tener al menos 8 caracteres.'); 
+      return; 
+    }
+    if (password && password !== passwordConfirm) { 
+      showEditError('Las contraseñas no coinciden.'); 
+      return; 
+    }
+
+    function showEditError(msg) {
+      $('#respuestaEditarAgente').show().html('<div class="alert alert-danger">' + msg + '</div>');
+      boton.prop('disabled', false).text('Guardar Cambios');
+    }
+
+    // Enviar datos
+    const formData = new FormData();
+    formData.append('accion', 'actualizar_usuario');
+    formData.append('cedula_original', cedulaOriginal);
+    formData.append('cedula', cedula);
+    formData.append('nombre', nombre);
+    formData.append('apellido', apellido);
+    formData.append('email', email);
+    formData.append('telefono', telefono);
+    if (password) {
+      formData.append('password', password);
+    }
+
+    $.ajax({
+      url: 'controlador/controladorUsuario.php',
+      type: 'POST',
+      data: formData,
+      processData: false,
+      contentType: false,
+      dataType: 'json',
+      success: function(res) {
+        if (res.success) {
+          $('#modalEditarAgente').modal('hide');
+          alert(res.message || 'Agente actualizado correctamente.');
+          location.reload();
+        } else {
+          $('#respuestaEditarAgente').show().html('<div class="alert alert-danger">' + (res.message || 'Error al actualizar agente') + '</div>');
+        }
+      },
+      error: function() {
+        $('#respuestaEditarAgente').show().html('<div class="alert alert-danger">Error de conexión al servidor.</div>');
+      },
+      complete: function() {
+        boton.prop('disabled', false).text('Guardar Cambios');
+      }
+    });
+  });
+
+  // --- LÓGICA PARA ELIMINAR AGENTE ---
+  $(document).on('click', '.btn-danger', function() {
+    const cedula = $(this).closest('tr').find('td:first').text().trim();
+    const nombre = $(this).closest('tr').find('td:nth-child(2)').text().trim();
+    
+    if (confirm(`¿Está seguro de eliminar al agente ${nombre} (${cedula})? Esta acción no se puede deshacer.`)) {
+      const boton = $(this);
+      boton.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span>');
+      
+      $.ajax({
+        url: 'controlador/controladorUsuario.php',
+        type: 'POST',
+        data: { 
+          accion: 'eliminar_usuario',
+          cedula: cedula
+        },
+        dataType: 'json',
+        success: function(res) {
+          if (res.success) {
+            alert(res.message || 'Agente eliminado correctamente.');
+            location.reload();
+          } else {
+            alert(res.message || 'Error al eliminar agente.');
+            boton.prop('disabled', false).text('Eliminar');
+          }
+        },
+        error: function() {
+          alert('Error de conexión al servidor.');
+          boton.prop('disabled', false).text('Eliminar');
+        }
+      });
+    }
+  });
+
+  // --- VALIDACIÓN DE FORMULARIOS ---
+  // Validación en tiempo real para nuevo agente
+  $('#nuevoAgenteForm input').on('blur', function() {
+    const field = $(this);
+    if (field.is('#agentePassword') || field.is('#agentePasswordConfirm')) {
+      validatePasswords();
+    } else if (field.is('#agenteCedula')) {
+      validateCedula(field.val().trim());
+    } else if (field.is('#agenteEmail')) {
+      validateEmail(field.val().trim());
+    }
+  });
+
+  function validatePasswords() {
+    const pass = $('#agentePassword').val();
+    const confirm = $('#agentePasswordConfirm').val();
+    
+    if (pass && confirm && pass !== confirm) {
+      $('#agentePasswordConfirm').addClass('is-invalid');
+      $('#agentePasswordConfirm').next('.invalid-feedback').text('Las contraseñas no coinciden.');
+    } else {
+      $('#agentePasswordConfirm').removeClass('is-invalid');
+    }
+  }
+
+  function validateCedula(cedula) {
+    const rePersona = /^V\d{7,8}$/i;
+    const reEntidad = /^(J|G|E|EM)\d{7,8}-\d{1}$/i;
+    
+    if (cedula && !(rePersona.test(cedula) || reEntidad.test(cedula))) {
+      $('#agenteCedula').addClass('is-invalid');
+    } else {
+      $('#agenteCedula').removeClass('is-invalid');
+    }
+  }
+
+  function validateEmail(email) {
+    const reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (email && !reEmail.test(email)) {
+      $('#agenteEmail').addClass('is-invalid');
+    } else {
+      $('#agenteEmail').removeClass('is-invalid');
+    }
+  }
 });
 </script>

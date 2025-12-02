@@ -162,7 +162,34 @@ class modeloUsuario {
             return false;
         }
 
-        $sql = "SELECT u.*, r.nombre_rol as rol FROM usuario u JOIN rol r ON u.id_rol = r.id_rol ORDER BY u.apellido, u.nombre";
+        $sql = "SELECT 
+                    u.cedula,
+                    u.email,
+                    u.activo,
+                    u.id_rol,
+                    r.nombre_rol,
+                    -- Datos personales de agente
+                    ag.nombre AS agente_nombre,
+                    ag.apellido AS agente_apellido,
+                    ag.telefono AS agente_telefono,
+                    -- Datos personales de administrador
+                    ad.nombre AS admin_nombre,
+                    ad.apellido AS admin_apellido,
+                    ad.telefono AS admin_telefono,
+                    -- Datos personales de cliente
+                    cl.nombre AS cliente_nombre,
+                    cl.apellido AS cliente_apellido,
+                    cl.telefono AS cliente_telefono,
+                    -- Combinamos todos usando COALESCE
+                    COALESCE(ag.nombre, ad.nombre, cl.nombre) AS nombre,
+                    COALESCE(ag.apellido, ad.apellido, cl.apellido) AS apellido,
+                    COALESCE(ag.telefono, ad.telefono, cl.telefono) AS telefono
+                FROM usuario u
+                JOIN rol r ON u.id_rol = r.id_rol
+                LEFT JOIN agente ag ON u.cedula = ag.cedula_agente
+                LEFT JOIN administrador ad ON u.cedula = ad.cedula_admin
+                LEFT JOIN cliente cl ON u.cedula = cl.cedula_asegurado
+                ORDER BY u.apellido, u.nombre";
 
         try {
             $stmt = $this->db->prepare($sql);
@@ -174,6 +201,35 @@ class modeloUsuario {
         }
     }
 
+    public function obtenerTodosLosAgentes() {
+        if (!$this->db) {
+            error_log("Error: Conexión a DB no inicializada en el Modelo.");
+            return false;
+        }
+
+        $sql = "SELECT 
+                    u.cedula,
+                    u.email,
+                    u.activo,
+                    r.nombre_rol,
+                    ag.nombre,
+                    ag.apellido,
+                    ag.telefono
+                FROM usuario u
+                JOIN rol r ON u.id_rol = r.id_rol
+                JOIN agente ag ON u.cedula = ag.cedula_agente
+                WHERE r.nombre_rol = 'agente'
+                ORDER BY ag.apellido, ag.nombre";
+
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Error de DB al obtener todos los agentes: " . $e->getMessage());
+            return false;
+        }
+    }
     /**
      * Verifica si una cédula ya existe en la tabla usuario.
      * @param string $cedula
@@ -504,6 +560,48 @@ class modeloUsuario {
             $this->db->rollBack();
             error_log("Error actualizarPerfil: " . $e->getMessage());
             return ['success' => false, 'message' => 'Error al guardar los datos: ' . $e->getMessage()];
+        }
+    }
+    public function eliminarUsuario(string $cedula): array
+    {
+        if (!$this->db) {
+            return ['success' => false, 'message' => 'Error de conexión a la base de datos.'];
+        }
+        
+        try {
+            $this->db->beginTransaction();
+            
+            // Primero eliminamos de las tablas dependientes (por las restricciones de clave foránea)
+            // Eliminar de agente_permiso
+            $sql1 = "DELETE FROM agente_permiso WHERE cedula_agente = :cedula";
+            $stmt1 = $this->db->prepare($sql1);
+            $stmt1->bindParam(':cedula', $cedula);
+            $stmt1->execute();
+            
+            // Eliminar de agente
+            $sql2 = "DELETE FROM agente WHERE cedula_agente = :cedula";
+            $stmt2 = $this->db->prepare($sql2);
+            $stmt2->bindParam(':cedula', $cedula);
+            $stmt2->execute();
+            
+            // Finalmente eliminar de usuario (se eliminará en cascada por las FK)
+            $sql3 = "DELETE FROM usuario WHERE cedula = :cedula";
+            $stmt3 = $this->db->prepare($sql3);
+            $stmt3->bindParam(':cedula', $cedula);
+            $stmt3->execute();
+            
+            $this->db->commit();
+            
+            if ($stmt3->rowCount() > 0) {
+                return ['success' => true, 'message' => 'Agente eliminado correctamente.'];
+            } else {
+                return ['success' => false, 'message' => 'No se encontró el agente para eliminar.'];
+            }
+            
+        } catch (\PDOException $e) {
+            $this->db->rollBack();
+            error_log("Error de DB al eliminar usuario: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error al eliminar el agente: ' . $e->getMessage()];
         }
     }
 

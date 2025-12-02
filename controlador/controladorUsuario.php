@@ -47,11 +47,68 @@ switch ($accion) {
         }
         break;
 
-    default:
-        $respuesta = ['success' => false, 'message' => 'Acción no reconocida.'];
+    case 'actualizar_usuario':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $respuesta['message'] = 'Método no permitido';
+            break;
+        }
 
+        $cedula_original = trim($_POST['cedula_original'] ?? '');
+        $cedula = trim($_POST['cedula'] ?? '');
+        $nombre = trim($_POST['nombre'] ?? '');
+        $apellido = trim($_POST['apellido'] ?? '');
+        $email = trim($_POST['email'] ?? '');
+        $telefono = trim($_POST['telefono'] ?? '');
+        $password = $_POST['password'] ?? null;
+
+        // Validaciones básicas
+        if (empty($cedula) || empty($nombre) || empty($apellido) || empty($email)) {
+            $respuesta = ['success' => false, 'message' => 'Todos los campos obligatorios son requeridos.'];
+            break;
+        }
+
+        // Si la cédula cambió, validar formato
+        if ($cedula !== $cedula_original && !$modelo->validarFormatoCedula($cedula)) {
+            $respuesta = ['success' => false, 'message' => 'Formato de cédula inválido.'];
+            break;
+        }
+
+        // Si el email cambió, verificar que no exista
+        if ($email !== $modelo->obtenerUsuarioPorCedula($cedula_original)['email']) {
+            if ($modelo->existeEmail($email)) {
+                $respuesta = ['success' => false, 'message' => 'El correo electrónico ya está registrado.'];
+                break;
+            }
+        }
+
+        $result = $modelo->actualizarUsuario($cedula_original, $cedula, $nombre, $apellido, $email, $telefono, $password);
+        $respuesta = $result;
         break;
-    
+
+    case 'eliminar_usuario':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $respuesta['message'] = 'Método no permitido';
+            break;
+        }
+
+        $cedula = trim($_POST['cedula'] ?? '');
+        
+        if (empty($cedula)) {
+            $respuesta = ['success' => false, 'message' => 'Cédula requerida.'];
+            break;
+        }
+
+        // Verificar que el usuario existe y es un agente
+        $usuario = $modelo->obtenerUsuarioPorCedula($cedula);
+        if (!$usuario || strtolower($usuario['rol']) !== 'agente') {
+            $respuesta = ['success' => false, 'message' => 'No se puede eliminar: usuario no encontrado o no es un agente.'];
+            break;
+        }
+
+        $result = $modelo->eliminarUsuario($cedula);
+        $respuesta = $result;
+        break;
+
     case 'actualizar_perfil':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $respuesta['message'] = 'Método no permitido';
@@ -90,6 +147,10 @@ switch ($accion) {
         }
 
         $respuesta = $resultado;
+        break;
+
+    default:
+        $respuesta = ['success' => false, 'message' => 'Acción no reconocida.'];
         break;
 }
 
