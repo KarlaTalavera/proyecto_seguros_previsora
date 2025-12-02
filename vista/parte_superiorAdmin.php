@@ -68,6 +68,7 @@
                     <i class="fas fa-fw fa-tachometer-alt"></i>
                     <span>Dashboard</span></a>
             </li>
+            
 
             <!-- Divider -->
             <hr class="sidebar-divider">
@@ -107,6 +108,14 @@
                     <span>Agentes</span>
                 </a>
             </li>
+
+            <li class="nav-item">
+                <a class="nav-link" href="index.php?vista=gestionTipoPoliza">
+                    <i class="fas fa-fw fa-list-alt"></i>
+                    <span>Tipos de Póliza</span>
+                </a>
+            </li>
+
             <!-- Nav Item - Utilities Collapse Menu -->
 
             

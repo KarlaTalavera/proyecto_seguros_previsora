@@ -729,4 +729,5 @@ class ModeloPoliza {
             return ['success' => false, 'message' => 'No se pudo eliminar la póliza'];
         }
     }
+    
 }

@@ -213,6 +213,192 @@ if ($agentes === false) {
 .button:active {
   border: 1px solid #0056b3;
 }
+
+<style>
+  :root {
+    --perm-modal-header-bg: #93BFC7;
+    --perm-modal-header-color: #fff;
+    --perm-card-header-bg: #DEDED1;
+    --perm-card-header-color: #333;
+    --perm-hover-bg: #e9e9e3;
+  }
+
+  /* Botones minimalistas para acciones de la tabla */
+  .btn-minimal {
+    background: transparent;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    padding: 6px 12px;
+    color: #555;
+    font-size: 0.85rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin: 2px;
+    cursor: pointer;
+  }
+
+  .btn-minimal:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+
+  .btn-minimal-edit {
+    color: #4a6baf;
+    border-color: #4a6baf;
+  }
+
+  .btn-minimal-edit:hover {
+    background-color: rgba(74, 107, 175, 0.05);
+    color: #3a5a9f;
+    border-color: #3a5a9f;
+  }
+
+  .btn-minimal-delete {
+    color: #e74c3c;
+    border-color: #e74c3c;
+  }
+
+  .btn-minimal-delete:hover {
+    background-color: rgba(231, 76, 60, 0.05);
+    color: #d62c1a;
+    border-color: #d62c1a;
+  }
+
+  .btn-minimal-perms {
+    color: #2ecc71;
+    border-color: #2ecc71;
+  }
+
+  .btn-minimal-perms:hover {
+    background-color: rgba(46, 204, 113, 0.05);
+    color: #27ae60;
+    border-color: #27ae60;
+  }
+
+  .btn-minimal i {
+    font-size: 0.9rem;
+  }
+
+  /* Contenedor de botones */
+  .btn-group-minimal {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  /* Botones de modales minimalistas */
+  .btn-modal {
+    background: transparent;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px 20px;
+    color: #555;
+    font-weight: 500;
+    transition: all 0.2s ease;
+  }
+
+  .btn-modal:hover {
+    background-color: #f8f9fa;
+    border-color: #ccc;
+  }
+
+  .btn-modal-primary {
+    color: #4a6baf;
+    border-color: #4a6baf;
+  }
+
+  .btn-modal-primary:hover {
+    background-color: rgba(74, 107, 175, 0.1);
+  }
+
+  /* Estilos para DataTable minimalista */
+  #agentsTable {
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+
+  #agentsTable thead th {
+    background-color: #f8f9fa;
+    border-bottom: 2px solid #e0e0e0;
+    color: #555;
+    font-weight: 600;
+    padding: 12px 15px;
+  }
+
+  #agentsTable tbody td {
+    padding: 12px 15px;
+    border-bottom: 1px solid #f0f0f0;
+    vertical-align: middle;
+  }
+
+  #agentsTable tbody tr:hover {
+    background-color: #fafafa;
+  }
+
+  /* Estilos para modales minimalistas */
+  .modal-content {
+    border: none;
+    border-radius: 10px;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+  }
+
+  .modal-header {
+    border-bottom: 1px solid #eaeaea;
+    background-color: #f8f9fa;
+    border-radius: 10px 10px 0 0;
+    padding: 15px 20px;
+  }
+
+  .modal-body {
+    padding: 20px;
+  }
+
+  .modal-footer {
+    border-top: 1px solid #eaeaea;
+    padding: 15px 20px;
+  }
+
+  /* Inputs minimalistas */
+  .form-control {
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 8px 12px;
+    transition: border-color 0.2s ease;
+  }
+
+  .form-control:focus {
+    border-color: #4a6baf;
+    box-shadow: 0 0 0 0.2rem rgba(74, 107, 175, 0.1);
+  }
+
+  /* Botón de añadir agente minimalista */
+  .btn-add-minimal {
+    background: transparent;
+    border: 2px dashed #4a6baf;
+    color: #4a6baf;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: 500;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+  }
+
+  .btn-add-minimal:hover {
+    background-color: rgba(74, 107, 175, 0.05);
+    border-style: solid;
+    transform: translateY(-1px);
+  }
+
+  .btn-add-minimal i {
+    font-size: 1rem;
+  }
+</style>
 </style>
 
 <!-- Begin Page Content -->
@@ -246,24 +432,35 @@ if ($agentes === false) {
                 <td><?php echo htmlspecialchars($agente['email']); ?></td>
                 <td><?php echo htmlspecialchars($agente['telefono']); ?></td>
                 <td>
-                  <button class="btn btn-sm btn-primary editAgentBtn" 
-                          data-cedula="<?php echo htmlspecialchars($agente['cedula']); ?>"
-                          data-nombre="<?php echo htmlspecialchars($agente['nombre']); ?>"
-                          data-apellido="<?php echo htmlspecialchars($agente['apellido']); ?>"
-                          data-email="<?php echo htmlspecialchars($agente['email']); ?>"
-                          data-telefono="<?php echo htmlspecialchars($agente['telefono']); ?>"
-                          data-toggle="modal" 
-                          data-target="#modalEditarAgente"
-                          title="Editar Agente">Editar</button>
-                  <button class="btn btn-sm btn-danger deleteAgentBtn" 
-                          data-cedula="<?php echo htmlspecialchars($agente['cedula']); ?>"
-                          title="Eliminar Agente">Eliminar</button>
-                  <button class="btn btn-sm btn-info managePermsBtn" 
-                          data-cedula="<?php echo htmlspecialchars($agente['cedula']); ?>" 
-                          data-nombre="<?php echo htmlspecialchars($agente['nombre'] . ' ' . $agente['apellido']); ?>"
-                          title="Gestionar Permisos">
-                    Permisos
-                  </button>
+                  <div class="btn-group-minimal">
+                    <button class="btn-minimal btn-minimal-edit editAgentBtn" 
+                            data-cedula="<?php echo htmlspecialchars($agente['cedula']); ?>"
+                            data-nombre="<?php echo htmlspecialchars($agente['nombre']); ?>"
+                            data-apellido="<?php echo htmlspecialchars($agente['apellido']); ?>"
+                            data-email="<?php echo htmlspecialchars($agente['email']); ?>"
+                            data-telefono="<?php echo htmlspecialchars($agente['telefono']); ?>"
+                            data-toggle="modal" 
+                            data-target="#modalEditarAgente"
+                            title="Editar Agente">
+                      <i class="fas fa-edit"></i>
+                      <span></span>
+                    </button>
+                    
+                    <button class="btn-minimal btn-minimal-delete deleteAgentBtn" 
+                            data-cedula="<?php echo htmlspecialchars($agente['cedula']); ?>"
+                            title="Eliminar Agente">
+                      <i class="fas fa-trash-alt"></i>
+                      <span></span>
+                    </button>
+                    
+                    <button class="btn-minimal btn-minimal-perms managePermsBtn" 
+                            data-cedula="<?php echo htmlspecialchars($agente['cedula']); ?>" 
+                            data-nombre="<?php echo htmlspecialchars($agente['nombre'] . ' ' . $agente['apellido']); ?>"
+                            title="Gestionar Permisos">
+                      <i class="fas fa-key"></i>
+                      <span></span>
+                    </button>
+                  </div>
                 </td>
               </tr>
             <?php endforeach; ?>
