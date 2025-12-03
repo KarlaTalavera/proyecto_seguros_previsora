@@ -7,19 +7,34 @@ $modeloCliente = new ModeloCliente();
 $accion = isset($_REQUEST['accion']) ? $_REQUEST['accion'] : '';
 $respuesta = ['success' => false, 'message' => 'Acción no válida o no proporcionada.'];
 
+// DEPURACIÓN: Mostrar lo que llega
+error_log("Acción recibida: " . $accion);
+error_log("POST recibido: " . print_r($_POST, true));
+
 switch ($accion) {
     case 'crear_cliente':
         $data = [
             'cedula_asegurado' => $_POST['cedula_asegurado'] ?? '',
-            'nombre_o_empresa' => $_POST['nombre_o_empresa'] ?? '',
+            'nombre'           => $_POST['nombre'] ?? '',
+            'apellido'         => $_POST['apellido'] ?? '',
             'email'            => $_POST['email'] ?? '',
             'telefono'         => $_POST['telefono'] ?? '',
-            'tipo'             => $_POST['tipo'] ?? 'Natural', 
             'direccion'        => $_POST['direccion'] ?? '',
         ];
         
-        if (empty($data['cedula_asegurado']) || empty($data['nombre_o_empresa']) || empty($data['email']) || empty($data['telefono'])) {
-            $respuesta['message'] = 'Faltan campos obligatorios.';
+        // DEPURACIÓN: Verificar cada campo
+        error_log("Datos para crear cliente: " . print_r($data, true));
+        
+        $camposFaltantes = [];
+        if (empty($data['cedula_asegurado'])) $camposFaltantes[] = 'cedula_asegurado';
+        if (empty($data['nombre'])) $camposFaltantes[] = 'nombre';
+        if (empty($data['apellido'])) $camposFaltantes[] = 'apellido';
+        if (empty($data['email'])) $camposFaltantes[] = 'email';
+        if (empty($data['telefono'])) $camposFaltantes[] = 'telefono';
+        
+        if (!empty($camposFaltantes)) {
+            error_log("Campos faltantes: " . implode(', ', $camposFaltantes));
+            $respuesta['message'] = 'Faltan campos obligatorios: ' . implode(', ', $camposFaltantes);
             break;
         }
 
@@ -30,15 +45,27 @@ switch ($accion) {
         $data = [
             'id_cliente'       => (int)($_POST['id_cliente'] ?? 0),
             'cedula_asegurado' => $_POST['cedula_asegurado'] ?? '',
-            'nombre_o_empresa' => $_POST['nombre_o_empresa'] ?? '',
+            'nombre'           => $_POST['nombre'] ?? '',
+            'apellido'         => $_POST['apellido'] ?? '',
             'email'            => $_POST['email'] ?? '',
             'telefono'         => $_POST['telefono'] ?? '',
-            'tipo'             => $_POST['tipo'] ?? 'Natural',
             'direccion'        => $_POST['direccion'] ?? '',
         ];
 
-        if (empty($data['id_cliente']) || empty($data['cedula_asegurado']) || empty($data['nombre_o_empresa']) || empty($data['email']) || empty($data['telefono'])) {
-            $respuesta['message'] = 'Faltan campos obligatorios o ID de cliente.';
+        // DEPURACIÓN: Verificar cada campo
+        error_log("Datos para actualizar cliente: " . print_r($data, true));
+        
+        $camposFaltantes = [];
+        if (empty($data['id_cliente'])) $camposFaltantes[] = 'id_cliente';
+        if (empty($data['cedula_asegurado'])) $camposFaltantes[] = 'cedula_asegurado';
+        if (empty($data['nombre'])) $camposFaltantes[] = 'nombre';
+        if (empty($data['apellido'])) $camposFaltantes[] = 'apellido';
+        if (empty($data['email'])) $camposFaltantes[] = 'email';
+        if (empty($data['telefono'])) $camposFaltantes[] = 'telefono';
+        
+        if (!empty($camposFaltantes)) {
+            error_log("Campos faltantes: " . implode(', ', $camposFaltantes));
+            $respuesta['message'] = 'Faltan campos obligatorios: ' . implode(', ', $camposFaltantes);
             break;
         }
 
@@ -58,5 +85,6 @@ switch ($accion) {
         break;
 }
 
+error_log("Respuesta enviada: " . print_r($respuesta, true));
 echo json_encode($respuesta);
 ?>

@@ -1,7 +1,11 @@
 <?php
-require_once 'parte_superior.php';
+// Incluir modeloUsuario PRIMERO, antes de cualquier otra cosa
+require_once dirname(__DIR__) . '/modelo/modeloUsuario.php';
 require_once dirname(__DIR__) . '/modelo/ModeloAsegurado.php';
 require_once dirname(__DIR__) . '/modelo/modeloPoliza.php';
+
+// Ahora incluir la parte superior que probablemente tiene session_start()
+require_once 'parte_superior.php';
 
 $modeloAsegurado = new ModeloAsegurado();
 $modeloPoliza = new modeloPoliza();
@@ -11,13 +15,21 @@ $esAgente = false;
 $esAdmin = false;
 $cedulaUsuario = '';
 
-if (is_object($_SESSION['datos_usuario']) && method_exists($_SESSION['datos_usuario'], 'getNombreRol')) {
-    $rol = strtolower($_SESSION['datos_usuario']->getNombreRol());
-    $esAgente = ($rol === 'agente');
-    $esAdmin = ($rol === 'administrador');
+// Verificar que el objeto de usuario existe y es válido
+if (isset($_SESSION['datos_usuario']) && is_object($_SESSION['datos_usuario'])) {
+    $usuario = $_SESSION['datos_usuario'];
     
-    if (method_exists($_SESSION['datos_usuario'], 'getCedula')) {
-        $cedulaUsuario = $_SESSION['datos_usuario']->getCedula();
+    // Verificar que sea una instancia de modeloUsuario
+    if ($usuario instanceof modeloUsuario) {
+        if (method_exists($usuario, 'getNombreRol')) {
+            $rol = strtolower($usuario->getNombreRol());
+            $esAgente = ($rol === 'agente');
+            $esAdmin = ($rol === 'administrador');
+        }
+        
+        if (method_exists($usuario, 'getCedula')) {
+            $cedulaUsuario = $usuario->getCedula();
+        }
     }
 }
 
@@ -28,20 +40,38 @@ $cedulaAgenteFiltro = $esAgente ? $cedulaUsuario : null;
 $asegurados = $modeloAsegurado->obtenerAseguradosCompletos($cedulaAgenteFiltro);
 $estadisticas = $modeloAsegurado->obtenerEstadisticasAsegurados($cedulaAgenteFiltro);
 
-// Obtener pólizas para el select - ¡DIRECTAMENTE!
+// Obtener pólizas para el select
 if ($esAgente) {
     $polizasDisponibles = $modeloPoliza->obtenerPolizas($cedulaUsuario);
 } else {
     $polizasDisponibles = $modeloPoliza->obtenerPolizas();
 }
-?>
 
+// Mostrar mensajes si existen
+if (isset($_SESSION['mensaje'])) {
+    $tipo = $_SESSION['tipo_mensaje'] ?? 'info';
+    $mensaje = $_SESSION['mensaje'];
+    unset($_SESSION['mensaje'], $_SESSION['tipo_mensaje']);
+}
+
+
+?>
 
 <div class="container-fluid">
 
     <!-- Page Heading -->
     <h1 class="h3 mb-2 text-gray-800">Gestión de Asegurados</h1>
     <p class="mb-4">Administra los asegurados adicionales asociados a las pólizas.</p>
+
+    <!-- Mensajes -->
+    <?php if (isset($mensaje)): ?>
+    <div class="alert alert-<?php echo $tipo; ?> alert-dismissible fade show" role="alert">
+        <?php echo htmlspecialchars($mensaje); ?>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+        </button>
+    </div>
+    <?php endif; ?>
 
     <!-- Estadísticas -->
     <div class="row mb-4">
@@ -175,6 +205,7 @@ if ($esAgente) {
                                 <?php endif; ?>
                             </td>
                             <td>
+                                <!-- Botón Editar que abre modal -->
                                 <button class="btn btn-sm btn-warning btn-editar" 
                                         data-id="<?php echo $asegurado['id_asegurado']; ?>"
                                         data-cedula="<?php echo htmlspecialchars($asegurado['cedula']); ?>"
@@ -186,12 +217,17 @@ if ($esAgente) {
                                         title="Editar">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="btn btn-sm btn-danger btn-eliminar" 
-                                        data-id="<?php echo $asegurado['id_asegurado']; ?>"
-                                        data-nombre="<?php echo htmlspecialchars($asegurado['nombre'] . ' ' . $asegurado['apellido']); ?>"
-                                        title="Eliminar">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                                
+                                <!-- Formulario para eliminar -->
+                                <form method="POST" action="controlador/controladorAsegurado.php" style="display:inline;">
+                                    <input type="hidden" name="accion" value="eliminar">
+                                    <input type="hidden" name="id_asegurado" value="<?php echo $asegurado['id_asegurado']; ?>">
+                                    <button type="submit" class="btn btn-sm btn-danger" 
+                                            onclick="return confirm('¿Está seguro de eliminar a <?php echo htmlspecialchars($asegurado['nombre'] . ' ' . $asegurado['apellido']); ?>?')"
+                                            title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -213,7 +249,8 @@ if ($esAgente) {
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formNuevoAsegurado">
+            <form method="POST" action="controlador/controladorAsegurado.php">
+                <input type="hidden" name="accion" value="crear">
                 <div class="modal-body">
                     <div class="row">
                         <div class="col-md-6">
@@ -291,9 +328,10 @@ if ($esAgente) {
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
-            <form id="formEditarAsegurado">
+            <form method="POST" action="controlador/controladorAsegurado.php">
+                <input type="hidden" name="accion" value="actualizar">
+                <input type="hidden" id="edit_id_asegurado" name="id_asegurado">
                 <div class="modal-body">
-                    <input type="hidden" id="edit_id_asegurado" name="id_asegurado">
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
@@ -329,6 +367,7 @@ if ($esAgente) {
                             <div class="form-group">
                                 <label for="edit_sexo">Sexo *</label>
                                 <select class="form-control" id="edit_sexo" name="sexo" required>
+                                    <option value="">Seleccione</option>
                                     <option value="M">Hombre</option>
                                     <option value="F">Mujer</option>
                                 </select>
@@ -346,10 +385,9 @@ if ($esAgente) {
 </div>
 
 <?php
-$extra_scripts = '
+$extra_scripts = <<<HTML
 <script src="vendor/datatables/jquery.dataTables.min.js"></script>
 <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
 .badge-pink {
@@ -366,89 +404,6 @@ $(document).ready(function() {
         "language": {
             "url": "//cdn.datatables.net/plug-ins/1.10.20/i18n/Spanish.json"
         }
-    });
-
-    // Enviar formulario de nuevo asegurado
-    $("#formNuevoAsegurado").submit(function(e) {
-        e.preventDefault();
-        
-        // Validaciones básicas
-        if (!$("#nuevo_id_poliza").val()) {
-            Swal.fire({
-                icon: "warning",
-                title: "Error",
-                text: "Debe seleccionar una póliza"
-            });
-            return;
-        }
-        
-        if (!$("#nuevo_nombre").val() || !$("#nuevo_apellido").val()) {
-            Swal.fire({
-                icon: "warning",
-                title: "Error",
-                text: "Nombre y apellido son obligatorios"
-            });
-            return;
-        }
-        
-        if (!$("#nuevo_fecha_nacimiento").val()) {
-            Swal.fire({
-                icon: "warning",
-                title: "Error",
-                text: "Fecha de nacimiento es obligatoria"
-            });
-            return;
-        }
-        
-        if (!$("#nuevo_sexo").val()) {
-            Swal.fire({
-                icon: "warning",
-                title: "Error",
-                text: "Debe seleccionar el sexo"
-            });
-            return;
-        }
-        
-        // Mostrar datos que se enviarán (para debug)
-        console.log("Datos a enviar:", $(this).serialize());
-        
-        $.ajax({
-            url: "controlador/controladorAsegurado.php",
-            type: "POST",
-            data: $(this).serialize() + "&accion=crear",
-            dataType: "json",
-            success: function(response) {
-                console.log("Respuesta:", response);
-                if (response.success) {
-                    Swal.fire({
-                        icon: "success",
-                        title: "¡Éxito!",
-                        text: response.message,
-                        showConfirmButton: false,
-                        timer: 1500
-                    }).then(() => {
-                        $("#modalNuevoAsegurado").modal("hide");
-                        // Resetear formulario
-                        $("#formNuevoAsegurado")[0].reset();
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: "error",
-                        title: "Error",
-                        text: response.message || "Error desconocido"
-                    });
-                }
-            },
-            error: function(xhr, status, error) {
-                console.error("Error en AJAX:", error);
-                Swal.fire({
-                    icon: "error",
-                    title: "Error de conexión",
-                    text: "No se pudo conectar con el servidor: " + error
-                });
-            }
-        });
     });
 
     // Mostrar modal de edición
@@ -471,87 +426,8 @@ $(document).ready(function() {
         
         $("#modalEditarAsegurado").modal("show");
     });
-
-    // Enviar formulario de edición
-    $("#formEditarAsegurado").submit(function(e) {
-        e.preventDefault();
-        
-        $.ajax({
-            url: "controlador/controladorAsegurado.php",
-            type: "POST",
-            data: $(this).serialize() + "&accion=actualizar",
-            dataType: "json",
-            success: function(response) {
-                if (response.success) {
-                    Swal.fire({
-                        icon: "success",
-                        title: "¡Éxito!",
-                        text: response.message,
-                        showConfirmButton: false,
-                        timer: 1500
-                    }).then(() => {
-                        $("#modalEditarAsegurado").modal("hide");
-                        location.reload();
-                    });
-                } else {
-                    Swal.fire({
-                        icon: "error",
-                        title: "Error",
-                        text: response.message
-                    });
-                }
-            }
-        });
-    });
-
-    // Eliminar asegurado
-    $(document).on("click", ".btn-eliminar", function() {
-        var id = $(this).data("id");
-        var nombre = $(this).data("nombre");
-        
-        Swal.fire({
-            title: "¿Estás seguro?",
-            text: "Vas a eliminar al asegurado: " + nombre,
-            icon: "warning",
-            showCancelButton: true,
-            confirmButtonColor: "#d33",
-            cancelButtonColor: "#3085d6",
-            confirmButtonText: "Sí, eliminar",
-            cancelButtonText: "Cancelar"
-        }).then((result) => {
-            if (result.isConfirmed) {
-                $.ajax({
-                    url: "controlador/controladorAsegurado.php",
-                    type: "POST",
-                    data: {
-                        accion: "eliminar",
-                        id_asegurado: id
-                    },
-                    success: function(response) {
-                        if (response.success) {
-                            Swal.fire({
-                                icon: "success",
-                                title: "¡Eliminado!",
-                                text: response.message,
-                                showConfirmButton: false,
-                                timer: 1500
-                            }).then(() => {
-                                location.reload();
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: "error",
-                                title: "Error",
-                                text: response.message
-                            });
-                        }
-                    }
-                });
-            }
-        });
-    });
 });
 </script>
-';
+HTML;
 require_once 'parte_inferior.php';
 ?>

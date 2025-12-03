@@ -32,18 +32,20 @@ class modeloUsuario {
             $this->password_hash = $data['password_hash'] ?? null;
             $this->telefono = $data['telefono'] ?? null;
             $this->id_rol = $data['id_rol'] ?? null;
-            $this->nombre_rol = $data['nombre_rol'] ?? null; // Viene del JOIN
+            $this->nombre_rol = $data['nombre_rol'] ?? null;
         } else {
             // Caso 2: Se usa como Modelo (sin argumentos) para inicializar la conexión a la DB
             try {
-                // *** CORRECCIÓN: Usar la clase Base_Datos y su método de conexión ***
+                require_once dirname(__DIR__) . '/config/conexion.php';
                 $base_datos = new Base_Datos();
                 $this->db = $base_datos->Conexion_Base_Datos();
-                // *******************************************************************
+                
+                if (!$this->db) {
+                    throw new Exception("No se pudo establecer la conexión a la base de datos.");
+                }
             } catch (\Exception $e) {
-                // Manejar error de conexión
                 error_log("Error al inicializar la conexión en modeloUsuario: " . $e->getMessage());
-                // Opcionalmente, lanzar o reportar error
+                throw $e; // Relanzar la excepción
             }
         }
     }
@@ -298,6 +300,7 @@ class modeloUsuario {
             return ['success' => false, 'message' => 'Conexión a la base de datos no disponible.'];
         }
 
+        // Extraer datos
         $cedula = $data['cedula'] ?? '';
         $email = $data['email'] ?? '';
         $nombre = $data['nombre'] ?? '';
@@ -306,14 +309,14 @@ class modeloUsuario {
         $telefono = $data['telefono'] ?? null;
         $id_rol = $data['id_rol'] ?? 2; // por defecto agente
 
-        // Validaciones simples
+        // Validaciones
         if (empty($cedula) || empty($nombre) || empty($apellido) || empty($email)) {
             return ['success' => false, 'message' => 'Faltan campos obligatorios.'];
         }
 
-        // Validar formato de cédula según reglas de la aseguradora
+        // Validar formato de cédula
         if (!$this->validarFormatoCedula($cedula)) {
-            return ['success' => false, 'message' => 'Formato de cédula inválido. Ejemplos válidos: V12345678 o J12345678-9'];
+            return ['success' => false, 'message' => 'Formato de cédula inválido.'];
         }
 
         // Validar email
@@ -329,51 +332,61 @@ class modeloUsuario {
             return ['success' => false, 'message' => 'El correo electrónico ya está registrado.'];
         }
 
-        // Validar password si fue provisto
+        // Validar password
         if (!empty($password) && strlen($password) < 8) {
             return ['success' => false, 'message' => 'La contraseña debe tener al menos 8 caracteres.'];
         }
 
-        // Hash de contraseña: si no se provee, generamos una contraseña aleatoria
+        // Generar hash de contraseña
         if (empty($password)) {
-            $password = bin2hex(random_bytes(4)); // 8 hex chars
+            $password = bin2hex(random_bytes(4));
         }
         $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
-        $sql = "INSERT INTO usuario (cedula, nombre, apellido, email, password_hash, telefono, id_rol) VALUES (:cedula, :nombre, :apellido, :email, :password_hash, :telefono, :id_rol)";
+        // INICIAR TRANSACCIÓN
+        $this->db->beginTransaction();
 
         try {
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':cedula', $cedula);
-            $stmt->bindParam(':nombre', $nombre);
-            $stmt->bindParam(':apellido', $apellido);
-            $stmt->bindParam(':email', $email);
-            $stmt->bindParam(':password_hash', $password_hash);
-            $stmt->bindParam(':telefono', $telefono);
-            $stmt->bindParam(':id_rol', $id_rol);
-            $stmt->execute();
+            // 1. Insertar en usuario (solo los campos que existen en la tabla usuario)
+            $sql1 = "INSERT INTO usuario (cedula, email, password_hash, activo, id_rol) 
+                    VALUES (:cedula, :email, :password_hash, 1, :id_rol)";
+            
+            $stmt1 = $this->db->prepare($sql1);
+            $stmt1->bindParam(':cedula', $cedula);
+            $stmt1->bindParam(':email', $email);
+            $stmt1->bindParam(':password_hash', $password_hash);
+            $stmt1->bindParam(':id_rol', $id_rol);
+            $stmt1->execute();
+
+            // 2. Insertar en la tabla específica según el rol
+            if ($id_rol == 2) { // Agente
+                $sql2 = "INSERT INTO agente (cedula_agente, nombre, apellido, telefono) 
+                        VALUES (:cedula, :nombre, :apellido, :telefono)";
+            } elseif ($id_rol == 1) { // Administrador
+                $sql2 = "INSERT INTO administrador (cedula_admin, nombre, apellido, telefono) 
+                        VALUES (:cedula, :nombre, :apellido, :telefono)";
+            } elseif ($id_rol == 3) { // Cliente
+                $sql2 = "INSERT INTO cliente (cedula_asegurado, nombre, apellido, telefono) 
+                        VALUES (:cedula, :nombre, :apellido, :telefono)";
+            }
+
+            $stmt2 = $this->db->prepare($sql2);
+            $stmt2->bindParam(':cedula', $cedula);
+            $stmt2->bindParam(':nombre', $nombre);
+            $stmt2->bindParam(':apellido', $apellido);
+            $stmt2->bindParam(':telefono', $telefono);
+            $stmt2->execute();
+
+            // Confirmar transacción
+            $this->db->commit();
+
             return ['success' => true, 'message' => 'Usuario creado correctamente.', 'password' => $password];
-        } catch (\PDOException $e) {
-            error_log("Error de DB al crear usuario: " . $e->getMessage());
-            return ['success' => false, 'message' => 'Error al insertar en la base de datos.'];
-        }
-    }
-        public function obtenerUsuarioPorCedula(string $cedula) {
-        if (!$this->db) return false;
 
-        // Se asume que 'rol' es una columna en 'usuario' o que se hace un JOIN a la tabla 'rol'
-        $sql = "SELECT u.cedula, u.nombre, u.apellido, u.email, u.telefono, r.nombre_rol AS rol
-                FROM usuario u
-                JOIN rol r ON u.id_rol = r.id_rol
-                WHERE u.cedula = :cedula";
-        try {
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':cedula', $cedula);
-            $stmt->execute();
-            return $stmt->fetch(PDO::FETCH_ASSOC);
         } catch (\PDOException $e) {
-            error_log("Error de DB al obtener usuario por cédula: " . $e->getMessage());
-            return false;
+            // Revertir transacción en caso de error
+            $this->db->rollBack();
+            error_log("Error de DB al crear usuario: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error al insertar en la base de datos: ' . $e->getMessage()];
         }
     }
 
@@ -385,49 +398,84 @@ class modeloUsuario {
             return ['success' => false, 'message' => 'Error de conexión a la base de datos.'];
         }
 
-        $sql = "UPDATE usuario SET cedula = :cedula, nombre = :nombre, apellido = :apellido, email = :email, telefono = :telefono";
-        $params = [
-            ':cedula' => $cedula,
-            ':nombre' => $nombre,
-            ':apellido' => $apellido,
-            ':email' => $email,
-            ':telefono' => $telefono,
-            ':cedula_original' => $cedula_original
-        ];
-
-        // Si se proporciona una nueva contraseña, la incluimos en la consulta
-        if (!empty($password)) {
-            if (strlen($password) < 8) {
-                return ['success' => false, 'message' => 'La nueva contraseña debe tener al menos 8 caracteres.'];
-            }
-            $password_hash = password_hash($password, PASSWORD_DEFAULT);
-            $sql .= ", password_hash = :password_hash";
-            $params[':password_hash'] = $password_hash;
-        }
-        
-        $sql .= " WHERE cedula = :cedula_original";
+        // INICIAR TRANSACCIÓN
+        $this->db->beginTransaction();
 
         try {
-            $stmt = $this->db->prepare($sql);
-            
-            // Bind de parámetros
-            foreach ($params as $key => &$value) {
-                $stmt->bindParam($key, $value);
-            }
-            
-            $stmt->execute();
+            // 1. Actualizar tabla usuario (solo email y contraseña)
+            $sqlUsuario = "UPDATE usuario SET email = :email";
+            $params = [':email' => $email, ':cedula_original' => $cedula_original];
 
-            if ($stmt->rowCount() > 0) {
-                return ['success' => true, 'message' => 'Agente actualizado correctamente.'];
-            } else {
-                // Esto puede ser porque no hubo cambios o la cédula_original no existe
-                return ['success' => false, 'message' => 'No se realizaron cambios o la cédula original no fue encontrada.'];
+            if (!empty($password)) {
+                if (strlen($password) < 8) {
+                    throw new Exception('La nueva contraseña debe tener al menos 8 caracteres.');
+                }
+                $password_hash = password_hash($password, PASSWORD_DEFAULT);
+                $sqlUsuario .= ", password_hash = :password_hash";
+                $params[':password_hash'] = $password_hash;
             }
-        } catch (\PDOException $e) {
-            // En caso de error, p. ej. cédula duplicada (si se permitiera editar la cédula)
-            $msg = "Error de DB al actualizar usuario: " . $e->getMessage();
-            error_log($msg);
-            return ['success' => false, 'message' => 'Error al actualizar: ' . (strpos($e->getMessage(), 'Duplicate entry') !== false ? 'La cédula o email ya existen.' : 'Error interno.')];
+            
+            $sqlUsuario .= " WHERE cedula = :cedula_original";
+
+            $stmtUsuario = $this->db->prepare($sqlUsuario);
+            foreach ($params as $key => &$value) {
+                $stmtUsuario->bindParam($key, $value);
+            }
+            $stmtUsuario->execute();
+
+            // 2. Determinar el rol para saber en qué tabla actualizar
+            // Primero obtenemos el rol del usuario
+            $sqlRol = "SELECT id_rol FROM usuario WHERE cedula = :cedula";
+            $stmtRol = $this->db->prepare($sqlRol);
+            $stmtRol->bindParam(':cedula', $cedula_original);
+            $stmtRol->execute();
+            $rolData = $stmtRol->fetch(PDO::FETCH_ASSOC);
+            
+            if (!$rolData) {
+                throw new Exception('Usuario no encontrado.');
+            }
+
+            $id_rol = $rolData['id_rol'];
+
+            // 3. Actualizar en la tabla específica según el rol
+            if ($id_rol == 2) { // Agente
+                $tabla = 'agente';
+                $campoCedula = 'cedula_agente';
+            } elseif ($id_rol == 1) { // Administrador
+                $tabla = 'administrador';
+                $campoCedula = 'cedula_admin';
+            } elseif ($id_rol == 3) { // Cliente
+                $tabla = 'cliente';
+                $campoCedula = 'cedula_asegurado';
+            } else {
+                throw new Exception('Rol no válido.');
+            }
+
+            $sqlEspecifica = "UPDATE $tabla SET 
+                            $campoCedula = :cedula_nueva,
+                            nombre = :nombre,
+                            apellido = :apellido,
+                            telefono = :telefono
+                            WHERE $campoCedula = :cedula_original";
+
+            $stmtEspecifica = $this->db->prepare($sqlEspecifica);
+            $stmtEspecifica->bindParam(':cedula_nueva', $cedula);
+            $stmtEspecifica->bindParam(':nombre', $nombre);
+            $stmtEspecifica->bindParam(':apellido', $apellido);
+            $stmtEspecifica->bindParam(':telefono', $telefono);
+            $stmtEspecifica->bindParam(':cedula_original', $cedula_original);
+            $stmtEspecifica->execute();
+
+            // Confirmar transacción
+            $this->db->commit();
+
+            return ['success' => true, 'message' => 'Usuario actualizado correctamente.'];
+
+        } catch (\Exception $e) {
+            // Revertir transacción en caso de error
+            $this->db->rollBack();
+            error_log("Error de DB al actualizar usuario: " . $e->getMessage());
+            return ['success' => false, 'message' => 'Error al actualizar: ' . $e->getMessage()];
         }
     }
 
@@ -602,6 +650,35 @@ class modeloUsuario {
             $this->db->rollBack();
             error_log("Error de DB al eliminar usuario: " . $e->getMessage());
             return ['success' => false, 'message' => 'Error al eliminar el agente: ' . $e->getMessage()];
+        }
+    }
+
+    public function obtenerUsuarioPorCedula(string $cedula) {
+        if (!$this->db) return false;
+
+        $sql = "SELECT 
+                    u.cedula,
+                    u.email,
+                    u.activo,
+                    r.nombre_rol AS rol,
+                    COALESCE(a.nombre, ad.nombre, c.nombre) AS nombre,
+                    COALESCE(a.apellido, ad.apellido, c.apellido) AS apellido,
+                    COALESCE(a.telefono, ad.telefono, c.telefono) AS telefono
+                FROM usuario u
+                JOIN rol r ON u.id_rol = r.id_rol
+                LEFT JOIN agente a ON u.cedula = a.cedula_agente
+                LEFT JOIN administrador ad ON u.cedula = ad.cedula_admin
+                LEFT JOIN cliente c ON u.cedula = c.cedula_asegurado
+                WHERE u.cedula = :cedula";
+
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':cedula', $cedula);
+            $stmt->execute();
+            return $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Error de DB al obtener usuario por cédula: " . $e->getMessage());
+            return false;
         }
     }
 

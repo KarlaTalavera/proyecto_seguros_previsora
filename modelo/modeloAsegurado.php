@@ -6,15 +6,40 @@ class ModeloAsegurado {
 
     public function __construct() {
         try {
+            error_log("DEBUG: Iniciando ModeloAsegurado");
+            
+            require_once dirname(__DIR__) . '/config/conexion.php';
+            
+            if (!class_exists('Base_Datos')) {
+                throw new Exception('Clase Base_Datos no encontrada');
+            }
+            
             $base_datos = new Base_Datos();
             $this->db = $base_datos->Conexion_Base_Datos();
+            
+            if (!$this->db) {
+                throw new Exception('Conexión a BD falló');
+            }
+            
+            error_log("DEBUG: Conexión BD exitosa");
+            
         } catch (Exception $e) {
-            error_log('Error inicializando DB en ModeloAsegurado: ' . $e->getMessage());
+            error_log('ERROR ModeloAsegurado: ' . $e->getMessage());
+            error_log('ERROR Traza: ' . $e->getTraceAsString());
+            throw $e;
         }
     }
 
     // Obtener todos los asegurados con información de póliza y agente
     public function obtenerAseguradosCompletos(?string $cedula_agente = null) {
+    error_log("=== INICIANDO obtenerAseguradosCompletos ===");
+    error_log("Cédula agente: " . ($cedula_agente ?? 'NULL'));
+    
+    if (!$this->db) {
+        error_log("ERROR: No hay conexión DB");
+        return [];
+    }
+
         if (!$this->db) return [];
         try {
             $sql = "SELECT 
@@ -261,31 +286,87 @@ class ModeloAsegurado {
 
     // Obtener estadísticas de asegurados
     public function obtenerEstadisticasAsegurados(?string $cedula_agente = null) {
-        if (!$this->db) return [];
+        error_log("=== INICIANDO obtenerEstadisticasAsegurados ===");
+        error_log("Cédula agente recibida: " . ($cedula_agente ?? 'NULL'));
+        
+        if (!$this->db) {
+            error_log("ERROR: Conexión DB no disponible");
+            return [
+                'total_asegurados' => 0,
+                'hombres' => 0,
+                'mujeres' => 0,
+                'polizas_con_asegurados' => 0
+            ];
+        }
+        
         try {
+            // Primero, veamos qué pólizas tiene el agente (si aplica)
+            if ($cedula_agente) {
+                $sqlPolizas = "SELECT id_poliza FROM poliza WHERE cedula_agente = :cedula_agente";
+                $stmtPolizas = $this->db->prepare($sqlPolizas);
+                $stmtPolizas->bindParam(':cedula_agente', $cedula_agente);
+                $stmtPolizas->execute();
+                $polizasAgente = $stmtPolizas->fetchAll(PDO::FETCH_COLUMN);
+                
+                error_log("Pólizas del agente: " . print_r($polizasAgente, true));
+            }
+            
+            // Construir consulta principal
             $sql = "SELECT 
                         COUNT(*) as total_asegurados,
-                        SUM(CASE WHEN sexo = 'M' THEN 1 ELSE 0 END) as hombres,
-                        SUM(CASE WHEN sexo = 'F' THEN 1 ELSE 0 END) as mujeres,
-                        COUNT(DISTINCT id_poliza) as polizas_con_asegurados
+                        SUM(CASE WHEN a.sexo = 'M' THEN 1 ELSE 0 END) as hombres,
+                        SUM(CASE WHEN a.sexo = 'F' THEN 1 ELSE 0 END) as mujeres,
+                        COUNT(DISTINCT a.id_poliza) as polizas_con_asegurados
                     FROM asegurado a
-                    JOIN poliza p ON a.id_poliza = p.id_poliza
+                    INNER JOIN poliza p ON a.id_poliza = p.id_poliza
                     WHERE 1=1";
-
+            
             if ($cedula_agente !== null) {
                 $sql .= " AND p.cedula_agente = :cedula_agente";
             }
-
+            
+            error_log("SQL a ejecutar: " . $sql);
+            
             $stmt = $this->db->prepare($sql);
             if ($cedula_agente !== null) {
                 $stmt->bindParam(':cedula_agente', $cedula_agente);
             }
+            
             $stmt->execute();
-            return $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            // Obtener resultado
+            $resultado = $stmt->fetch(PDO::FETCH_ASSOC);
+            error_log("Resultado crudo: " . print_r($resultado, true));
+            
+            // Convertir NULLs a 0
+            if ($resultado) {
+                foreach (['total_asegurados', 'hombres', 'mujeres', 'polizas_con_asegurados'] as $campo) {
+                    $resultado[$campo] = $resultado[$campo] ?? 0;
+                }
+            } else {
+                $resultado = [
+                    'total_asegurados' => 0,
+                    'hombres' => 0,
+                    'mujeres' => 0,
+                    'polizas_con_asegurados' => 0
+                ];
+            }
+            
+            error_log("Resultado final: " . print_r($resultado, true));
+            error_log("=== FIN obtenerEstadisticasAsegurados ===");
+            
+            return $resultado;
+            
         } catch (PDOException $e) {
-            error_log('Error obtenerEstadisticasAsegurados: ' . $e->getMessage());
-            return [];
+            error_log('ERROR obtenerEstadisticasAsegurados: ' . $e->getMessage());
+            error_log('ERROR Traza: ' . $e->getTraceAsString());
+            return [
+                'total_asegurados' => 0,
+                'hombres' => 0,
+                'mujeres' => 0,
+                'polizas_con_asegurados' => 0
+            ];
         }
-      }
+    }
 }
 ?>

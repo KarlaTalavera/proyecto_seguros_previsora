@@ -974,7 +974,7 @@ $(document).ready(function() {
   });
 
   // --- LÓGICA PARA ELIMINAR AGENTE ---
-  $(document).on('click', '.btn-danger', function() {
+  $(document).on('click', '.deleteAgentBtn', function() {
     const cedula = $(this).closest('tr').find('td:first').text().trim();
     const nombre = $(this).closest('tr').find('td:nth-child(2)').text().trim();
     
