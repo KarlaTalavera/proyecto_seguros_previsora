@@ -314,6 +314,10 @@ class ModeloSiniestro {
         }
     }
 
+    public function obtenerIdPolizaPorNumeroPublico(string $numero_poliza): ?int {
+        return $this->obtenerIdPolizaPorNumero($numero_poliza);
+    }
+
     // MÉTODO AUXILIAR: OBTENER ID DE PÓLIZA POR NÚMERO
     private function obtenerIdPolizaPorNumero(string $numero_poliza): ?int {
         if (!$this->db) return null;

@@ -194,6 +194,33 @@ class ModeloPoliza {
         }, $polizas);
     }
 
+    public function obtenerPolizasPorAgente(string $cedula_agente) {
+        if (!$this->db) return [];
+        
+        try {
+            $sql = "SELECT 
+                        p.id_poliza,
+                        p.numero_poliza,
+                        CONCAT(c.nombre, ' ', c.apellido) AS nombre_cliente,
+                        tp.nombre AS tipo_poliza,
+                        p.estado
+                    FROM poliza p
+                    JOIN cliente c ON p.id_cliente = c.id_cliente
+                    JOIN tipo_poliza tp ON p.id_tipo_poliza = tp.id_tipo_poliza
+                    WHERE p.cedula_agente = :cedula_agente
+                    AND p.estado = 'ACTIVA'
+                    ORDER BY p.numero_poliza";
+            
+            $stmt = $this->db->prepare($sql);
+            $stmt->bindParam(':cedula_agente', $cedula_agente);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log("Error de DB al obtener pólizas por agente: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function obtenerPolizaPorId(int $id_poliza) {
         if (!$this->db) {
             return null;
