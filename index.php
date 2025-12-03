@@ -26,8 +26,8 @@ $rol = $usuario->getNombreRol();
 
 // Definir las vistas permitidas para cada rol
 $vistas_permitidas = [
-    'administrador' => ['estadisticasAdmin', 'gestionAgente', 'gestionCliente', 'polizasAdmin', 'reportesAdmin', 'siniestrosAdmin', 'login', 'gestionTipoPoliza'],
-    'agente' => ['estadisticasAgente', 'gestionCliente', 'polizasAgente', 'reportesAgente', 'siniestrosAgente', 'login'],
+    'administrador' => ['estadisticasAdmin', 'gestionAgente', 'gestionCliente', 'polizasAdmin', 'reportesAdmin', 'siniestrosAdmin', 'login', 'gestionTipoPoliza', 'gestionAsegurado'],
+    'agente' => ['estadisticasAgente', 'gestionCliente', 'polizasAgente', 'reportesAgente', 'siniestrosAgente', 'login', 'gestionAsegurado'],
     'asegurado' => ['polizasCliente', 'solicitudCliente', 'documentacionCliente', 'login']
 ];
 

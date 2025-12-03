@@ -174,6 +174,8 @@
                     <span>Reportes</span></a>
             </li>
 
+			
+
 			<li class="nav-item">
 				<a class="nav-link" href="index.php?vista=gestionCliente">
 					<!-- icono: clientes -->
@@ -195,6 +197,13 @@
                     <span>Tipos de Póliza</span>
                 </a>
             </li>
+
+			<li class="nav-item">
+				<a class="nav-link" href="index.php?vista=gestionAsegurado">
+					<i class="fas fa-fw fa-user-plus"></i>
+					<span>Asegurados</span>
+				</a>
+			</li>
 			<?php endif; ?>
 
 			<?php if (isset($_SESSION['datos_usuario']) && $_SESSION['datos_usuario']->getNombreRol() === 'agente'): ?>
@@ -219,6 +228,13 @@
 					<!-- icono: reportes -->
 					<i class="fas fa-fw fa-file-alt"></i>
 					<span>Reportes</span>
+				</a>
+			</li>
+
+			<li class="nav-item">
+				<a class="nav-link" href="index.php?vista=gestionAsegurado">
+					<i class="fas fa-fw fa-user-plus"></i>
+					<span>Asegurados</span>
 				</a>
 			</li>
 			<?php endif; ?>

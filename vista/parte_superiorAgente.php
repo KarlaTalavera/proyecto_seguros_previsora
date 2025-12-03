@@ -135,6 +135,13 @@ $rol_agente = $agente_data ? htmlspecialchars($agente_data['nombre_rol']) : 'Rol
                     <span>Reportes</span></a>
             </li>
 
+            <li class="nav-item">
+                <a class="nav-link" href="index.php?vista=gestionAsegurado">
+                    <i class="fas fa-fw fa-user-plus"></i>
+                    <span>Asegurados</span>
+                </a>
+            </li>
+
             <!-- Nav Item - Tables -->
 
             <!-- Divider -->

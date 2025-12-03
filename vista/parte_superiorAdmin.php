@@ -116,6 +116,13 @@
                 </a>
             </li>
 
+            <li class="nav-item">
+                <a class="nav-link" href="index.php?vista=gestionAsegurado">
+                    <i class="fas fa-fw fa-user-plus"></i>
+                    <span>Asegurados</span>
+                </a>
+            </li>
+
             <!-- Nav Item - Utilities Collapse Menu -->
 
             
