@@ -12,6 +12,33 @@ class ModeloPermiso {
             error_log("Error al inicializar la conexión en ModeloPermiso: " . $e->getMessage());
             $this->db = null;
         }
+        $this->asegurarPermisoGestionSolicitudes();
+    }
+
+    private function asegurarPermisoGestionSolicitudes(): void {
+        if (!$this->db) {
+            return;
+        }
+        try {
+            $nombre = 'solicitud_gestionar';
+            $descripcion = 'Coordinar solicitudes de pólizas y reportes de siniestros';
+            $stmt = $this->db->prepare('SELECT COUNT(*) FROM permiso WHERE nombre_permiso = :nombre LIMIT 1');
+            $stmt->bindParam(':nombre', $nombre, PDO::PARAM_STR);
+            $stmt->execute();
+            if ((int)$stmt->fetchColumn() === 0) {
+                $insert = $this->db->prepare('INSERT INTO permiso (nombre_permiso, descripcion) VALUES (:nombre, :descripcion)');
+                $insert->bindParam(':nombre', $nombre, PDO::PARAM_STR);
+                $insert->bindParam(':descripcion', $descripcion, PDO::PARAM_STR);
+                $insert->execute();
+            } else {
+                $update = $this->db->prepare('UPDATE permiso SET descripcion = :descripcion WHERE nombre_permiso = :nombre');
+                $update->bindParam(':descripcion', $descripcion, PDO::PARAM_STR);
+                $update->bindParam(':nombre', $nombre, PDO::PARAM_STR);
+                $update->execute();
+            }
+        } catch (\PDOException $e) {
+            error_log('Error asegurando permiso de solicitudes: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -20,6 +47,8 @@ class ModeloPermiso {
      */
     public function obtenerTodosLosPermisos() {
         if (!$this->db) return false;
+
+        $this->asegurarPermisoGestionSolicitudes();
 
         $sql = "SELECT id_permiso, nombre_permiso, descripcion FROM permiso ORDER BY nombre_permiso ASC";
         try {

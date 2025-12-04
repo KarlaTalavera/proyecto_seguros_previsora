@@ -50,7 +50,7 @@ $permisosActuales = isset($_SESSION['permisos_usuario']) && is_array($_SESSION['
   </div>
 </div>
 
-<div class="modal fade modal-alineada" id="modalPoliza" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade modal-consistent" id="modalPoliza" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable" role="document">
     <div class="modal-content">
       <form id="formPoliza" autocomplete="off">
@@ -164,15 +164,15 @@ $permisosActuales = isset($_SESSION['permisos_usuario']) && is_array($_SESSION['
           </div>
         </div>
         <div class="modal-footer">
-          <button type="button" class="neu-button" data-dismiss="modal">Cancelar</button>
-          <button type="submit" class="neu-button neu-primary" id="guardarPolizaBtn">Guardar póliza</button>
+          <button type="button" class="btn-neo btn-neo--light" data-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn-neo btn-neo--primary" id="guardarPolizaBtn">Guardar póliza</button>
         </div>
       </form>
     </div>
   </div>
 </div>
 
-<div class="modal fade" id="modalDetallePoliza" tabindex="-1" role="dialog" aria-hidden="true">
+<div class="modal fade modal-consistent" id="modalDetallePoliza" tabindex="-1" role="dialog" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
     <div class="modal-content">
       <div class="modal-header">
@@ -230,7 +230,7 @@ $permisosActuales = isset($_SESSION['permisos_usuario']) && is_array($_SESSION['
         </dl>
       </div>
       <div class="modal-footer">
-        <button type="button" class="neu-button" data-dismiss="modal">Cerrar</button>
+        <button type="button" class="btn-neo btn-neo--light" data-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>

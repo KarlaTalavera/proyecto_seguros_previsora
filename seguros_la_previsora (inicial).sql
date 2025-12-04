@@ -55,7 +55,8 @@ INSERT INTO `agente_permiso` (`cedula_agente`, `id_permiso`, `tiene_permiso`) VA
 ('V12345678', 15, 1),
 ('V12345678', 16, 1),
 ('V12345678', 17, 1),
-('V12345678', 18, 1);
+('V12345678', 18, 1),
+('V12345678', 19, 0);
 
 -- --------------------------------------------------------
 
@@ -182,7 +183,8 @@ INSERT INTO `permiso` (`id_permiso`, `nombre_permiso`, `descripcion`) VALUES
 (15, 'reportes_generar_clientes', 'Permite generar reportes de clientes.'),
 (16, 'poliza_categoria_personas', 'Autoriza al agente a emitir pólizas de la categoría Personas.'),
 (17, 'poliza_categoria_automovil', 'Autoriza al agente a emitir pólizas de la categoría Automóvil.'),
-(18, 'poliza_categoria_patrimoniales', 'Autoriza al agente a emitir pólizas de la categoría Patrimoniales.');
+(18, 'poliza_categoria_patrimoniales', 'Autoriza al agente a emitir pólizas de la categoría Patrimoniales.'),
+(19, 'solicitud_gestionar', 'Permite al agente revisar y actualizar las solicitudes asignadas.');
 
 -- --------------------------------------------------------
 

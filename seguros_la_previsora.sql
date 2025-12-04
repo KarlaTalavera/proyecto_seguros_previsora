@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 01-12-2025 a las 18:48:44
+-- Tiempo de generación: 04-12-2025 a las 07:16:05
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -59,7 +59,8 @@ CREATE TABLE `agente` (
 --
 
 INSERT INTO `agente` (`cedula_agente`, `nombre`, `apellido`, `telefono`) VALUES
-('V12345678', 'Santiago', 'Rodriguez', '04247654321');
+('V12345678', 'Nuevo', 'Agente', '04123333333'),
+('V26260313', 'Tilinaso', 'Papulince', '0412-1361992');
 
 -- --------------------------------------------------------
 
@@ -206,7 +207,8 @@ INSERT INTO `detalle_poliza` (`id_poliza`, `fecha_inicio`, `fecha_fin`, `monto_p
 (102, '2025-10-05', '2025-11-15', 95.00, 1, 95.00, '2025-09-01', 'ANUAL'),
 (103, '2025-08-05', '2026-02-03', 300.00, 1, 300.00, '2025-07-08', 'ANUAL'),
 (104, '2024-11-05', '2025-11-10', 800.00, 1, 800.00, '2025-04-19', 'ANUAL'),
-(105, '2025-09-05', '2025-11-17', 1500.00, 1, 1500.00, '2026-11-05', 'ANUAL');
+(105, '2025-09-05', '2025-11-17', 1500.00, 1, 1500.00, '2026-11-05', 'ANUAL'),
+(106, '2025-12-02', '2025-12-06', 5000.00, 5, 1000.00, '2025-12-10', 'MENSUAL');
 
 -- --------------------------------------------------------
 
@@ -242,7 +244,8 @@ INSERT INTO `permiso` (`id_permiso`, `nombre_permiso`, `descripcion`) VALUES
 (15, 'reportes_generar_clientes', 'Permite generar reportes de clientes.'),
 (16, 'poliza_categoria_personas', 'Autoriza al agente a emitir pólizas de la categoría Personas.'),
 (17, 'poliza_categoria_automovil', 'Autoriza al agente a emitir pólizas de la categoría Automóvil.'),
-(18, 'poliza_categoria_patrimoniales', 'Autoriza al agente a emitir pólizas de la categoría Patrimoniales.');
+(18, 'poliza_categoria_patrimoniales', 'Autoriza al agente a emitir pólizas de la categoría Patrimoniales.'),
+(19, 'solicitud_gestionar', 'Gestionar solicitudes de pólizas y siniestros');
 
 -- --------------------------------------------------------
 
@@ -264,12 +267,13 @@ CREATE TABLE `poliza` (
 --
 
 INSERT INTO `poliza` (`id_poliza`, `numero_poliza`, `estado`, `id_cliente`, `cedula_agente`, `id_tipo_poliza`) VALUES
-(100, 'POL-1001', 'ACTIVA', 1, 'V12345678', 5),
+(100, 'POL-1001', 'ELIMINADA', 1, 'V12345678', 5),
 (101, 'POL-1002', 'ACTIVA', 2, 'V12345678', 6),
-(102, 'POL-1003', 'PENDIENTE', 1, 'V12345678', 1),
-(103, 'POL-1004', 'ACTIVA', 2, 'V12345678', 3),
-(104, 'POL-1005', 'VENCER', 1, 'V12345678', 8),
-(105, 'POL-1006', 'ACTIVA', 2, 'V12345678', 9);
+(102, 'POL-1003', 'ELIMINADA', 1, 'V12345678', 1),
+(103, 'POL-1004', 'ELIMINADA', 2, 'V12345678', 3),
+(104, 'POL-1005', 'ELIMINADA', 1, 'V12345678', 8),
+(105, 'POL-1006', 'ELIMINADA', 2, 'V12345678', 9),
+(106, 'POL-1007', 'ACTIVA', 1, 'V26260313', 5);
 
 -- --------------------------------------------------------
 
@@ -289,7 +293,10 @@ CREATE TABLE `poliza_cobertura` (
 INSERT INTO `poliza_cobertura` (`id_poliza`, `id_cobertura`) VALUES
 (101, 1),
 (101, 2),
-(105, 3);
+(105, 3),
+(106, 1),
+(106, 2),
+(106, 3);
 
 -- --------------------------------------------------------
 
@@ -318,7 +325,12 @@ INSERT INTO `poliza_cuota` (`id_cuota`, `id_poliza`, `numero_cuota`, `fecha_venc
 (3, 102, 1, '2025-09-01', 95.00, NULL, NULL, 'ATRASADO'),
 (4, 103, 1, '2025-07-08', 300.00, NULL, NULL, 'ATRASADO'),
 (5, 104, 1, '2025-04-19', 800.00, NULL, NULL, 'ATRASADO'),
-(6, 105, 1, '2026-11-05', 1500.00, NULL, NULL, 'PENDIENTE');
+(6, 105, 1, '2026-11-05', 1500.00, NULL, NULL, 'PENDIENTE'),
+(12, 106, 1, '2025-12-10', 1000.00, NULL, NULL, 'PENDIENTE'),
+(13, 106, 2, '2026-01-10', 1000.00, NULL, NULL, 'PENDIENTE'),
+(14, 106, 3, '2026-02-10', 1000.00, NULL, NULL, 'PENDIENTE'),
+(15, 106, 4, '2026-03-10', 1000.00, NULL, NULL, 'PENDIENTE'),
+(16, 106, 5, '2026-04-10', 1000.00, NULL, NULL, 'PENDIENTE');
 
 -- --------------------------------------------------------
 
@@ -402,6 +414,66 @@ INSERT INTO `siniestro` (`id_siniestro`, `numero_siniestro`, `fecha_reporte`, `d
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `solicitud_poliza`
+--
+
+CREATE TABLE `solicitud_poliza` (
+  `id_solicitud` int(10) UNSIGNED NOT NULL,
+  `id_cliente` int(10) UNSIGNED NOT NULL,
+  `cedula_cliente` varchar(20) NOT NULL,
+  `id_categoria` int(10) UNSIGNED NOT NULL,
+  `id_tipo_poliza` int(10) UNSIGNED NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `contacto_preferido` varchar(255) DEFAULT NULL,
+  `estado` enum('EN_REVISION','CONTACTADO','EN_PROCESO','APROBADO','RECHAZADO','CANCELADO') NOT NULL DEFAULT 'EN_REVISION',
+  `cedula_agente_asignado` varchar(20) DEFAULT NULL,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_actualizacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `nota_interna` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `solicitud_poliza`
+--
+
+INSERT INTO `solicitud_poliza` (`id_solicitud`, `id_cliente`, `cedula_cliente`, `id_categoria`, `id_tipo_poliza`, `descripcion`, `contacto_preferido`, `estado`, `cedula_agente_asignado`, `fecha_creacion`, `fecha_actualizacion`, `nota_interna`) VALUES
+(1, 1, 'V20000001', 1, 1, 'Cobertura complementaria para viajes frecuentes.', 'juan.perez@example.com', 'EN_REVISION', 'V26260313', '2025-11-20 18:30:00', '2025-12-03 23:49:25', NULL),
+(2, 2, 'V20000002', 3, 6, 'Actualizar póliza de comercio con cobertura robo.', '0414-7654321', 'CONTACTADO', 'V12345678', '2025-11-25 13:10:00', '2025-12-03 23:47:51', 'Cliente contactado, espera cotización.'),
+(0, 1, 'V20000001', 3, 8, 'necesito un pocoe vainas, por ejemplo, mas amigos, que el dolar baje y que las clases terminen, pero por ahora me conformo con tener una poliza que cubra los gastos en caso de que mi casa se prenda candela oh no mi casa tiooo xdxdxdxd', '0412-1365498', 'EN_REVISION', 'V26260313', '2025-12-03 23:08:50', '2025-12-03 23:08:50', NULL);
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `solicitud_siniestro`
+--
+
+CREATE TABLE `solicitud_siniestro` (
+  `id_solicitud` int(10) UNSIGNED NOT NULL,
+  `id_poliza` int(10) UNSIGNED NOT NULL,
+  `cedula_cliente` varchar(20) NOT NULL,
+  `tipo_incidente` varchar(150) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `fecha_incidente` date NOT NULL,
+  `lugar_incidente` varchar(255) DEFAULT NULL,
+  `estado` enum('EN_REVISION','CITA_PENDIENTE','EN_GESTION','ESCALADO','CERRADO','CANCELADO') NOT NULL DEFAULT 'EN_REVISION',
+  `cedula_agente_asignado` varchar(20) DEFAULT NULL,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_actualizacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `nota_interna` text DEFAULT NULL,
+  `fecha_cita` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `solicitud_siniestro`
+--
+
+INSERT INTO `solicitud_siniestro` (`id_solicitud`, `id_poliza`, `cedula_cliente`, `tipo_incidente`, `descripcion`, `fecha_incidente`, `lugar_incidente`, `estado`, `cedula_agente_asignado`, `fecha_creacion`, `fecha_actualizacion`, `nota_interna`, `fecha_cita`) VALUES
+(1, 100, 'V20000001', 'Choque frontal leve', 'Cliente solicita evaluación de daños en parachoques.', '2025-11-18', 'Caracas - Av. Libertador', 'CITA_PENDIENTE', 'V12345678', '2025-11-19 19:45:00', '2025-12-03 23:46:38', 'Coordinar perito para el 22/11.', '2025-11-22 10:30:00'),
+(2, 105, 'V20000002', 'Daño por agua', 'Inundación parcial del local comercial tras lluvia.', '2025-11-22', 'Valencia - Av. Bolívar', 'EN_GESTION', 'V26260313', '2025-11-23 12:15:00', '2025-12-03 23:49:06', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `tipo_poliza`
 --
 
@@ -466,11 +538,11 @@ CREATE TABLE `usuario` (
 --
 
 INSERT INTO `usuario` (`cedula`, `email`, `password_hash`, `activo`, `id_rol`, `foto_perfil`) VALUES
-('V12345678', 'santi@previsora.com', '$2y$10$v8dGm8Hq4saG0j/5lVlKaOqITPTvNAwonfzRjWLanH3oZowlTeCly', 1, 2, 'undraw_profile.svg'),
-('V20000001', 'juan.perez@example.com', '$2y$10$xQNNf3KGSblr4UhPyxzmM.edawtvKfeb1t4xDk0K3K9r40GMDRQR2', 1, 3, 'undraw_profile.svg'),
-('V20000002', 'maria.gomez@example.com', '$2y$10$xQNNf3KGSblr4UhPyxzmM.edawtvKfeb1t4xDk0K3K9r40GMDRQR2', 1, 3, 'undraw_profile.svg'),
-('V31843813', 'admin@previsora.com', '$2y$10$xQNNf3KGSblr4UhPyxzmM.edawtvKfeb1t4xDk0K3K9r40GMDRQR2', 1, 1, 'undraw_profile.svg'),
-('V31894578', 'saraleon030405@gmail.com', '$2y$10$oF2cREtn772dCHSCiUR7LuHKBGxLv83rE5edOAzRFkBsWUtsGfI9i', 1, 3, 'undraw_profile.svg');
+('V12345678', 'agente@example.com', '$2y$10$cKK9.jeL.I0NNhAQzuBOXehgD1NPK/Kt52mHrfh4YZL0XNoFwTj3y', 1, 2, 'perfil_V12345678_1764683485.jpg'),
+('V20000001', 'juan.perez@example.com', '$2y$10$0X84RacVPt9gcu1DwqcDBONznGMyoCHSNC2rZ3Oc4frVsXkcDyKHy', 1, 3, 'undraw_profile.svg'),
+('V20000002', 'maria.gomez@example.com', '$2y$10$cIBvbEvDurW46YugpZYzDuOOhHJpdBYKnPN/V8k0zBKBPjVTmsJVK', 1, 3, 'undraw_profile.svg'),
+('V26260313', 'k4tam4ria@gmail.com', '$2y$10$JoiP4w0Kkryfe7XAUCd.xuFmBQS.Al8d6t6AIoK5xpKXhMWKaKpVu', 1, 2, 'undraw_profile.svg'),
+('V31843813', 'admin@previsora.com', '$2y$10$a79Q3w6f9KuUDbL4j74xQOKxy5PQ6hFaHRCuAh2mwxKhN6VL.avja', 1, 1, 'perfil_V31843813_1764682914.jpg');
 
 --
 -- Índices para tablas volcadas
@@ -631,19 +703,19 @@ ALTER TABLE `cobertura`
 -- AUTO_INCREMENT de la tabla `permiso`
 --
 ALTER TABLE `permiso`
-  MODIFY `id_permiso` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `id_permiso` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT de la tabla `poliza`
 --
 ALTER TABLE `poliza`
-  MODIFY `id_poliza` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=106;
+  MODIFY `id_poliza` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=107;
 
 --
 -- AUTO_INCREMENT de la tabla `poliza_cuota`
 --
 ALTER TABLE `poliza_cuota`
-  MODIFY `id_cuota` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
+  MODIFY `id_cuota` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT de la tabla `rol`

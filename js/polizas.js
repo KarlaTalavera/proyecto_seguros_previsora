@@ -4,10 +4,10 @@
     var API_BASE = 'controlador/controladorPoliza.php';
     var DATATABLE_LANG = 'https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json';
     var ESTADO_DEFINICIONES = {
-        'ACTIVA': { badge: 'success', label: 'Activa', textClass: 'text-success' },
-        'RENOVAR': { badge: 'warning', label: 'Por vencer', textClass: 'text-warning' },
-        'CANCELADA': { badge: 'secondary', label: 'Cancelada', textClass: 'text-secondary' },
-        'ELIMINADA': { badge: 'dark', label: 'Eliminada', textClass: 'text-muted' }
+        'ACTIVA': { badge: 'success', label: 'Activa', variant: 'aprobado', textClass: 'text-success' },
+        'RENOVAR': { badge: 'warning', label: 'Por vencer', variant: 'pendiente', textClass: 'text-warning' },
+        'CANCELADA': { badge: 'danger', label: 'Cancelada', variant: 'rechazado', textClass: 'text-secondary' },
+        'ELIMINADA': { badge: 'secondary', label: 'Eliminada', variant: 'neutral', textClass: 'text-muted' }
     };
 
     function formatCurrency(value) {
@@ -44,6 +44,7 @@
         var fallback = {
             badge: 'info',
             label: normalized || '—',
+            variant: 'info',
             textClass: 'text-info'
         };
         return ESTADO_DEFINICIONES[normalized] || fallback;
@@ -51,7 +52,8 @@
 
     function estadoBadge(estado) {
         var entry = obtenerEstadoDefinicion(estado);
-        return '<span class="badge badge-' + entry.badge + '">' + entry.label + '</span>';
+        var variant = entry.variant || entry.badge || 'info';
+        return '<span class="badge-soft" data-variant="' + variant + '">' + entry.label + '</span>';
     }
 
     function limpiarSelect($select) {

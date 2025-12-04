@@ -158,25 +158,81 @@ class ModeloReporte {
      * Si $cedula_agente se provee, devuelve sólo ese agente (útil para Agente rol).
      */
     public function rankingProductividad(int $months = 12, string $cedula_agente = null, int $limit = 10) {
-        if (!$this->db) return false;
-        $sql = "SELECT p.cedula_agente, u.nombre, u.apellido, COUNT(DISTINCT p.id_poliza) AS num_polizas,
-               SUM(dp.monto_prima_total) AS suma_primas
-                FROM poliza p
-                JOIN detalle_poliza dp ON p.id_poliza = dp.id_poliza
-                LEFT JOIN usuario u ON p.cedula_agente = u.cedula
-                WHERE dp.fecha_inicio >= DATE_SUB(CURDATE(), INTERVAL :months MONTH)";
-        if ($cedula_agente) $sql .= " AND p.cedula_agente = :cedula_agente";
-        $sql .= " GROUP BY p.cedula_agente ORDER BY num_polizas DESC, suma_primas DESC LIMIT :limit";
+        if (!$this->db) {
+            return false;
+        }
+
+        $months = $months > 0 ? $months : 12;
+        $limit = $limit > 0 ? $limit : 10;
+        $limit = min($limit, 50);
+
+        $fechaInicio = null;
+        if ($months > 0) {
+            $fechaInicio = (new DateTimeImmutable('first day of this month'))
+                ->modify('-' . ($months - 1) . ' months')
+                ->format('Y-m-d');
+        }
+
+        $startDates = [$fechaInicio];
+        if ($fechaInicio !== null) {
+            $startDates[] = null; // fallback sin ventana si no hay datos recientes
+        }
 
         try {
-            $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':months', $months, PDO::PARAM_INT);
-            if ($cedula_agente) $stmt->bindParam(':cedula_agente', $cedula_agente);
-            $stmt->bindParam(':limit', $limit, PDO::PARAM_INT);
-            $stmt->execute();
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $rows = [];
+            foreach ($startDates as $start) {
+                  $sql = "SELECT p.cedula_agente,
+                           COALESCE(a.nombre, '') AS nombre,
+                           COALESCE(a.apellido, '') AS apellido,
+                               COUNT(DISTINCT p.id_poliza) AS num_polizas,
+                               COALESCE(SUM(dp.monto_prima_total), 0) AS suma_primas
+                        FROM poliza p
+                        JOIN detalle_poliza dp ON p.id_poliza = dp.id_poliza
+                       LEFT JOIN usuario u ON p.cedula_agente = u.cedula
+                       LEFT JOIN agente a ON p.cedula_agente = a.cedula_agente
+                        WHERE p.estado <> 'ELIMINADA'
+                          AND (u.activo = 1 OR u.activo IS NULL)";
+
+                if ($start !== null) {
+                    $sql .= " AND dp.fecha_inicio >= :fecha_inicio";
+                }
+                if ($cedula_agente) {
+                    $sql .= " AND p.cedula_agente = :cedula_agente";
+                }
+
+                $sql .= " GROUP BY p.cedula_agente
+                          ORDER BY num_polizas DESC, suma_primas DESC
+                          LIMIT {$limit}";
+
+                $stmt = $this->db->prepare($sql);
+                if ($start !== null) {
+                    $stmt->bindParam(':fecha_inicio', $start);
+                }
+                if ($cedula_agente) {
+                    $stmt->bindParam(':cedula_agente', $cedula_agente);
+                }
+
+                $stmt->execute();
+                $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                if (!empty($rows)) {
+                    break;
+                }
+            }
+
+            $this->lastError = '';
+
+            return array_map(function ($row) {
+                return [
+                    'cedula_agente' => $row['cedula_agente'],
+                    'nombre' => $row['nombre'] ?? '',
+                    'apellido' => $row['apellido'] ?? '',
+                    'num_polizas' => isset($row['num_polizas']) ? (int)$row['num_polizas'] : 0,
+                    'suma_primas' => isset($row['suma_primas']) ? (float)$row['suma_primas'] : 0.0
+                ];
+            }, $rows ?: []);
         } catch (PDOException $e) {
-            error_log('Error R8 rankingProductividad: ' . $e->getMessage());
+            $this->lastError = $e->getMessage();
+            error_log('Error R8 rankingProductividad: ' . $this->lastError);
             return false;
         }
     }
@@ -209,33 +265,39 @@ class ModeloReporte {
      */
     public function tendenciaSiniestros(int $months = 12, string $cedula_agente = null) {
         if (!$this->db) return false;
+
+        $months = $months > 0 ? $months : 12;
+        $inicioPeriodo = (new DateTimeImmutable('first day of this month'))
+            ->modify('-' . ($months - 1) . ' months');
+        $fechaInicio = $inicioPeriodo->format('Y-m-d');
+
         $sql = "SELECT DATE_FORMAT(fecha_reporte, '%Y-%m') AS ym, COUNT(*) AS total
                 FROM siniestro s
-                WHERE fecha_reporte >= DATE_SUB(CURDATE(), INTERVAL :months MONTH)";
+                WHERE fecha_reporte >= :fecha_inicio";
         if ($cedula_agente) $sql .= " AND s.cedula_agente_gestion = :cedula_agente";
         $sql .= " GROUP BY ym ORDER BY ym ASC";
 
         try {
             $stmt = $this->db->prepare($sql);
-            $stmt->bindParam(':months', $months, PDO::PARAM_INT);
+            $stmt->bindParam(':fecha_inicio', $fechaInicio);
             if ($cedula_agente) $stmt->bindParam(':cedula_agente', $cedula_agente);
             $stmt->execute();
             $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            // Build full months list to include zero months
-            $labels = [];
-            $data = [];
-            $start = new DateTime();
-            $start->modify('-' . ($months-1) . ' months');
             $map = [];
             foreach ($rows as $r) {
                 $map[$r['ym']] = (int)$r['total'];
             }
-            $period = new DatePeriod($start, new DateInterval('P1M'), $months);
-            foreach ($period as $dt) {
-                $ym = $dt->format('Y-m');
-                $labels[] = $dt->format('M Y');
+
+            $labels = [];
+            $data = [];
+            $currentMonth = new DateTimeImmutable('first day of this month');
+            $iterator = $inicioPeriodo;
+            while ($iterator <= $currentMonth) {
+                $ym = $iterator->format('Y-m');
+                $labels[] = $iterator->format('M Y');
                 $data[] = isset($map[$ym]) ? $map[$ym] : 0;
+                $iterator = $iterator->modify('+1 month');
             }
 
             return ['labels' => $labels, 'data' => $data];
