@@ -247,9 +247,26 @@ $configJson = json_encode([
   'permisos' => $permisosActuales
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
+$dataTablesCore = htmlspecialchars(
+  resolveAssetPath(
+    'vendor/datatables/jquery.dataTables.min.js',
+    'https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js'
+  ),
+  ENT_QUOTES,
+  'UTF-8'
+);
+$dataTablesBootstrap = htmlspecialchars(
+  resolveAssetPath(
+    'vendor/datatables/dataTables.bootstrap4.min.js',
+    'https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js'
+  ),
+  ENT_QUOTES,
+  'UTF-8'
+);
+
 $extra_scripts = <<<EOT
-<script src="vendor/datatables/jquery.dataTables.min.js"></script>
-<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+<script src="{$dataTablesCore}"></script>
+<script src="{$dataTablesBootstrap}"></script>
 <script src="js/polizas.js"></script>
 <script>
 (function (config) {

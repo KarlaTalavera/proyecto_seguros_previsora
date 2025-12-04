@@ -238,9 +238,9 @@ class ModeloReporte {
     }
 
     /**
-     * Pólizas por ramo (categoría): devuelve conteo por categoría
+     * Pólizas por categoría: devuelve conteo agrupado por categoría de seguro.
      */
-    public function polizasPorRamo(string $cedula_agente = null) {
+    public function polizasPorCategoria(string $cedula_agente = null) {
         if (!$this->db) return false;
         $sql = "SELECT c.nombre AS categoria, COUNT(*) AS total
                 FROM poliza p
@@ -255,7 +255,7 @@ class ModeloReporte {
             $stmt->execute();
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
-            error_log('Error polizasPorRamo: ' . $e->getMessage());
+            error_log('Error polizasPorCategoria: ' . $e->getMessage());
             return false;
         }
     }

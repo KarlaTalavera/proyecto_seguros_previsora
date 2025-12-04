@@ -228,6 +228,15 @@ $estadosJson = json_encode($estadosConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAP
 </div>
 
 <?php
+$dataTablesCore = resolveAssetPath(
+  'vendor/datatables/jquery.dataTables.min.js',
+  'https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js'
+);
+$dataTablesBootstrap = resolveAssetPath(
+  'vendor/datatables/dataTables.bootstrap4.min.js',
+  'https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js'
+);
+
 ob_start();
 ?>
 <script>
@@ -237,8 +246,8 @@ ob_start();
     agentes: <?php echo $agentesJson ?: '[]'; ?>
   };
 </script>
-<script src="vendor/datatables/jquery.dataTables.min.js"></script>
-<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+<script src="<?php echo htmlspecialchars($dataTablesCore, ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script src="<?php echo htmlspecialchars($dataTablesBootstrap, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script src="js/solicitudesGestion.js"></script>
 <?php
 $scriptsBuffer = ob_get_clean();

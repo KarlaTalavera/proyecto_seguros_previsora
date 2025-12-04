@@ -44,7 +44,7 @@ require_once __DIR__ . '/parte_superior.php';
   </div>
 
   <div class="row mt-4">
-  <div class="col-lg-6"><div class="card p-3"><h6>Pólizas por Ramo</h6><div class="chart-wrapper" style="height:320px;"><canvas id="ramoChart" style="width:100%;height:100%;"></canvas></div></div></div>
+  <div class="col-lg-6"><div class="card p-3"><h6>Pólizas por Categoría</h6><div class="chart-wrapper" style="height:320px;"><canvas id="categoriaChart" style="width:100%;height:100%;"></canvas></div></div></div>
     <div class="col-lg-6"><div class="card p-3"><h6>Tendencia de Siniestros (últimos 12 meses)</h6><canvas id="siniestrosTrend"></canvas></div></div>
   </div>
 
@@ -168,20 +168,20 @@ require_once __DIR__ . '/parte_superior.php';
       card.find('.chart-note').remove();
       card.append('<div class="text-center text-danger small mt-2 chart-note">Error cargando ranking.</div>');
     });
-    // R: Pólizas por Ramo (barra)
-    $.getJSON('controlador/controladorReporte.php', { accion: 'r_ramo' }, function(res){
+    // R: Pólizas por Categoría (barra)
+    $.getJSON('controlador/controladorReporte.php', { accion: 'r_categoria' }, function(res){
         if (res.success && res.data && res.data.length) {
         const labels = res.data.map(r => r.categoria || 'Otro');
         const values = res.data.map(r => parseInt(r.total || 0));
         // Debug: log labels/values and Chart.js version to investigate missing bars
-        try { console.log('ramoChart labels:', labels); console.log('ramoChart values:', values); console.log('Chart.version:', Chart && Chart.version); } catch(e) { console.warn('ramoChart debug log failed', e); }
+      try { console.log('categoriaChart labels:', labels); console.log('categoriaChart values:', values); console.log('Chart.version:', Chart && Chart.version); } catch(e) { console.warn('categoriaChart debug log failed', e); }
   // Ensure visible colors and basic options for compatibility across Chart.js versions
   // If a label looks like 'automóvil' (case-insensitive, partial match), highlight it for visibility
   // Use palette-consistent color for 'Automóvil' so it matches other charts
   const bg = labels.map((label,i) => (String(label||'').toLowerCase().includes('autom') ? palette[2] : palette[i % palette.length]));
   const border = bg.map(c => c);
         // Render like `r8Chart` (horizontal bars) — keep config minimal to match existing working charts
-        const ctxEl = document.getElementById('ramoChart');
+      const ctxEl = document.getElementById('categoriaChart');
         const cfg = {
           type: 'bar',
           data: { labels: labels, datasets: [{ label: 'Pólizas', data: values, backgroundColor: bg, borderColor: border, borderWidth: 1 }] },
@@ -207,7 +207,7 @@ require_once __DIR__ . '/parte_superior.php';
             elements: { bar: { maxBarThickness: 60 } }
           }
         };
-        try { if (window.ramoChartInstance) { window.ramoChartInstance.destroy(); } } catch(e) {}
+        try { if (window.categoriaChartInstance) { window.categoriaChartInstance.destroy(); } } catch(e) {}
         // If Chart.js is v2, it won't understand scales.y. Detect and adapt by copying
         // our _v2_scales into cfg.options.scales before creating the chart.
         try {
@@ -220,12 +220,12 @@ require_once __DIR__ . '/parte_superior.php';
             cfg.options.scales.yAxes = cfg.options._v2_scales.yAxes;
           }
         } catch(e) { /* ignore detection errors */ }
-        window.ramoChartInstance = new Chart(ctxEl, cfg);
+        window.categoriaChartInstance = new Chart(ctxEl, cfg);
       } else {
-        $('#ramoChart').parent().append('<div class="text-center text-muted small mt-2">No hay datos de pólizas por ramo.</div>');
+        $('#categoriaChart').parent().append('<div class="text-center text-muted small mt-2">No hay datos de pólizas por categoría.</div>');
       }
     }).fail(function(){
-      $('#ramoChart').parent().append('<div class="text-center text-danger small mt-2">Error cargando pólizas por ramo.</div>');
+      $('#categoriaChart').parent().append('<div class="text-center text-danger small mt-2">Error cargando pólizas por categoría.</div>');
     });
 
     // R: Tendencia de Siniestros (últimos meses) - área

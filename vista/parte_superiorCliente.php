@@ -1,3 +1,12 @@
+<?php
+require_once dirname(__DIR__) . '/config/asset_paths.php';
+
+$fontAwesomeCss = resolveAssetPath(
+    'vendor/fontawesome-free/css/all.min.css',
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css'
+);
+$sbAdminCss = resolveAssetPath('css/sb-admin-2.min.css', 'css/sb-admin-2.min.css');
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -12,13 +21,13 @@
     <title>Cliente</title>
 
     <!-- Custom fonts for this template-->
-    <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="<?php echo htmlspecialchars($fontAwesomeCss, ENT_QUOTES, 'UTF-8'); ?>" rel="stylesheet" type="text/css">
     <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
 
     <!-- Custom styles for this template-->
-    <link href="../css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="<?php echo htmlspecialchars($sbAdminCss, ENT_QUOTES, 'UTF-8'); ?>" rel="stylesheet">
 
     <!-- NOTE: Si una vista necesita CSS/JS adicional, puede asignar la variable PHP $extra_scripts.
          Esa variable será impresa automáticamente al final de la página desde parte_inferior.php. -->

@@ -1,6 +1,7 @@
 <?php
 // Lógica de sesión y carga de modelo
 if (session_status() == PHP_SESSION_NONE) { session_start(); }
+require_once dirname(__DIR__) . '/config/asset_paths.php';
 require_once dirname(__DIR__) . '/modelo/modeloUsuario.php';
 
 $modeloUsuario = new modeloUsuario();
@@ -8,6 +9,12 @@ $cedula_agente = $_SESSION['agente_cedula'] ?? 'V-12345678'; // Valor por defect
 $agente_data = $modeloUsuario->obtenerAgenteLoggeado($cedula_agente);
 $nombre_agente = $agente_data ? htmlspecialchars($agente_data['nombre'] . ' ' . $agente_data['apellido']) : 'Usuario Desconocido';
 $rol_agente = $agente_data ? htmlspecialchars($agente_data['nombre_rol']) : 'Rol Desconocido'; // CLAVE: Obtiene el rol
+
+$fontAwesomeCss = resolveAssetPath(
+    'vendor/fontawesome-free/css/all.min.css',
+    'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css'
+);
+$sbAdminCss = resolveAssetPath('css/sb-admin-2.min.css', 'css/sb-admin-2.min.css');
 ?>
 
 <!DOCTYPE html>
@@ -24,13 +31,13 @@ $rol_agente = $agente_data ? htmlspecialchars($agente_data['nombre_rol']) : 'Rol
     <title>Agente</title>
 
     <!-- Custom fonts for this template-->
-    <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+    <link href="<?php echo htmlspecialchars($fontAwesomeCss, ENT_QUOTES, 'UTF-8'); ?>" rel="stylesheet" type="text/css">
     <link
         href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
 
     <!-- Custom styles for this template-->
-    <link href="../css/sb-admin-2.min.css" rel="stylesheet">
+    <link href="<?php echo htmlspecialchars($sbAdminCss, ENT_QUOTES, 'UTF-8'); ?>" rel="stylesheet">
 
     <!-- NOTE: Si una vista necesita CSS/JS adicional, puede asignar la variable PHP $extra_scripts.
          Esa variable será impresa automáticamente al final de la página desde parte_inferior.php. -->

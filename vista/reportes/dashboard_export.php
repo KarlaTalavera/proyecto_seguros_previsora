@@ -42,19 +42,19 @@
   </div>
 
   <div class="section">
-    <h2>Pólizas por ramo</h2>
-    <?php if ($puedeMostrarGraficos && !empty($urls['polizasPorRamo'])): ?>
-      <img class="chart-img" src="<?php echo htmlspecialchars($urls['polizasPorRamo'], ENT_QUOTES, 'UTF-8'); ?>" alt="Gráfico de pólizas por ramo">
+    <h2>Pólizas por categoría</h2>
+    <?php if ($puedeMostrarGraficos && !empty($urls['polizasPorCategoria'])): ?>
+      <img class="chart-img" src="<?php echo htmlspecialchars($urls['polizasPorCategoria'], ENT_QUOTES, 'UTF-8'); ?>" alt="Gráfico de pólizas por categoría">
     <?php elseif (!$puedeMostrarGraficos): ?>
       <p class="muted">Habilite la extensión GD para visualizar esta gráfica en el PDF.</p>
     <?php else: ?>
       <p class="muted">No se pudo generar la gráfica por falta de datos.</p>
     <?php endif; ?>
     <table>
-      <thead><tr><th>Ramo</th><th>Total</th></tr></thead>
+      <thead><tr><th>Categoría</th><th>Total</th></tr></thead>
       <tbody>
-        <?php if (!empty($datos['polizasPorRamo'])): ?>
-          <?php foreach ($datos['polizasPorRamo'] as $row): ?>
+        <?php if (!empty($datos['polizasPorCategoria'])): ?>
+          <?php foreach ($datos['polizasPorCategoria'] as $row): ?>
             <tr>
               <td><?php echo htmlspecialchars($row['categoria'] ?? 'Sin categoría', ENT_QUOTES, 'UTF-8'); ?></td>
               <td><?php echo number_format((float)($row['total'] ?? 0), 0, ',', '.'); ?></td>

@@ -64,6 +64,7 @@ $permisoPorAccion = [
     'r1' => 'reportes_generar_polizas',
     'r4' => 'reportes_generar_polizas',
     'r8' => 'reportes_generar_polizas',
+    'r_categoria' => 'reportes_generar_polizas',
     'r_ramo' => 'reportes_generar_polizas',
     'r_agente_ventas' => 'reportes_generar_polizas',
     'kpis' => 'reportes_generar_polizas',
@@ -76,7 +77,7 @@ $permisoPorAccion = [
 
 $permisoRequerido = $permisoPorAccion[$accion] ?? null;
 if ($rol === 'agente') {
-    $accionesPropias = ['r1', 'r4', 'r8', 'r_ramo', 'r_agente_ventas', 'kpis', 'kpis_agente', 'r_tipo_cliente', 'r_siniestros', 'exportar_grafico'];
+    $accionesPropias = ['r1', 'r4', 'r8', 'r_categoria', 'r_ramo', 'r_agente_ventas', 'kpis', 'kpis_agente', 'r_tipo_cliente', 'r_siniestros', 'exportar_grafico'];
     if (in_array($accion, $accionesPropias, true)) {
         $permisoRequerido = null;
     }
@@ -143,16 +144,17 @@ switch ($accion) {
         }
         break;
 
-    case 'r_ramo': // pólizas por ramo (categoría)
+    case 'r_categoria': // pólizas por categoría
+    case 'r_ramo': // alias legacy
         $ced = null;
         if ($rol === 'agente' && $usuario) {
             $ced = $usuario->getCedula();
         } elseif (isset($_GET['cedula_agente'])) {
             $ced = $_GET['cedula_agente'];
         }
-        $data = $modelo->polizasPorRamo($ced);
+        $data = $modelo->polizasPorCategoria($ced);
         if ($data !== false) $response = ['success' => true, 'data' => $data];
-        else $response = ['success' => false, 'message' => 'Error al obtener pólizas por ramo.'];
+        else $response = ['success' => false, 'message' => 'Error al obtener pólizas por categoría.'];
         break;
 
     case 'r_siniestros': // tendencia de siniestros
@@ -275,7 +277,9 @@ switch ($accion) {
     case 'exportar_grafico':
         $grafico = strtolower(trim((string)($_GET['grafico'] ?? $_POST['grafico'] ?? '')));
         $formato = strtolower((string)($_GET['formato'] ?? $_POST['formato'] ?? 'pdf'));
-        $graficasPermitidas = ['ramo', 'estado', 'ranking', 'siniestros'];
+        $graficasPermitidas = ['categoria', 'ramo', 'estado', 'ranking', 'siniestros'];
+        $aliasGrafico = ['ramo' => 'categoria'];
+        $graficoInterno = $aliasGrafico[$grafico] ?? $grafico;
 
         if (!in_array($grafico, $graficasPermitidas, true)) {
             $response = ['success' => false, 'message' => 'Gráfica no soportada.'];
@@ -316,17 +320,17 @@ switch ($accion) {
 
         try {
             if ($formato === 'pdf') {
-                $contenido = $exporter->generarPdfGrafico($grafico, $datosDashboard, $contexto);
+                $contenido = $exporter->generarPdfGrafico($graficoInterno, $datosDashboard, $contexto);
                 header('Content-Type: application/pdf');
-                header('Content-Disposition: attachment; filename="grafico_' . $grafico . '_' . $timestamp . '.pdf"');
+                header('Content-Disposition: attachment; filename="grafico_' . $graficoInterno . '_' . $timestamp . '.pdf"');
                 echo $contenido;
                 exit;
             }
 
             if ($formato === 'xlsx') {
-                $contenido = $exporter->generarExcelGrafico($grafico, $datosDashboard, $contexto);
+                $contenido = $exporter->generarExcelGrafico($graficoInterno, $datosDashboard, $contexto);
                 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-                header('Content-Disposition: attachment; filename="grafico_' . $grafico . '_' . $timestamp . '.xlsx"');
+                header('Content-Disposition: attachment; filename="grafico_' . $graficoInterno . '_' . $timestamp . '.xlsx"');
                 header('Content-Length: ' . strlen($contenido));
                 echo $contenido;
                 exit;

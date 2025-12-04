@@ -36,11 +36,11 @@ class ReporteDashboardExporter
             ? $this->modelo->kpisResumen($cedulaAgente)
             : $this->modelo->kpisAgente($cedulaAgente);
 
-        $datos['polizasPorRamo'] = array_map(function ($row) {
+        $datos['polizasPorCategoria'] = array_map(function ($row) {
             $row['categoria'] = $this->normalizarNombreCategoria($row['categoria'] ?? 'Sin categoría');
             $row['total'] = isset($row['total']) ? (int)$row['total'] : 0;
             return $row;
-        }, $this->modelo->polizasPorRamo($cedulaAgente) ?: []);
+        }, $this->modelo->polizasPorCategoria($cedulaAgente) ?: []);
         $datos['tendenciaSiniestros'] = $this->modelo->tendenciaSiniestros(12, $cedulaAgente) ?: ['labels' => [], 'data' => []];
         $datos['polizasPorVencer'] = $this->modelo->polizasPorVencer(30, $cedulaAgente) ?: [];
         $datos['polizasPorEstado'] = $this->modelo->polizasPorEstado($cedulaAgente) ?: [];
@@ -162,7 +162,7 @@ class ReporteDashboardExporter
             if ($info['grafico'] === 'ranking') {
                 $this->aplicarFormatoEntero($hoja, 'C' . ($fila - count($info['rawRows'])) . ':C' . ($fila - 1));
                 $this->aplicarFormatoMoneda($hoja, 'D' . ($fila - count($info['rawRows'])) . ':D' . ($fila - 1));
-            } elseif ($info['grafico'] === 'ramo' || $info['grafico'] === 'estado') {
+            } elseif ($info['grafico'] === 'categoria' || $info['grafico'] === 'estado') {
                 $this->aplicarFormatoEntero($hoja, 'B' . ($fila - count($info['rawRows'])) . ':B' . ($fila - 1));
             } elseif ($info['grafico'] === 'siniestros') {
                 $this->aplicarFormatoEntero($hoja, 'B' . ($fila - count($info['rawRows'])) . ':B' . ($fila - 1));
@@ -214,14 +214,14 @@ class ReporteDashboardExporter
     private function generarChartUrls(array $datos): array
     {
         return [
-            'polizasPorRamo' => $this->chartUrlPolizasPorRamo($datos['polizasPorRamo'] ?? []),
+            'polizasPorCategoria' => $this->chartUrlPolizasPorCategoria($datos['polizasPorCategoria'] ?? []),
             'polizasPorEstado' => $this->chartUrlPolizasPorEstado($datos['polizasPorEstado'] ?? []),
             'rankingProductividad' => $this->chartUrlRanking($datos['rankingProductividad'] ?? []),
             'tendenciaSiniestros' => $this->chartUrlSiniestros($datos['tendenciaSiniestros'] ?? ['labels' => [], 'data' => []]),
         ];
     }
 
-    private function chartUrlPolizasPorRamo(array $rows): ?string
+    private function chartUrlPolizasPorCategoria(array $rows): ?string
     {
         if (empty($rows)) {
             return null;
@@ -418,6 +418,9 @@ class ReporteDashboardExporter
     private function extraerInfoGrafico(string $grafico, array $datosDashboard): array
     {
         $grafico = strtolower($grafico);
+        if ($grafico === 'ramo') {
+            $grafico = 'categoria';
+        }
         $infoBase = [
             'grafico' => $grafico,
             'titulo' => 'Gráfica',
@@ -430,19 +433,19 @@ class ReporteDashboardExporter
         ];
 
         switch ($grafico) {
-            case 'ramo':
-                $rows = $datosDashboard['polizasPorRamo'] ?? [];
-                $infoBase['titulo'] = 'Pólizas por ramo';
-                $infoBase['descripcion'] = 'Cantidad de pólizas agrupadas por ramo de seguros.';
-                $infoBase['headers'] = ['Ramo', 'Total'];
+            case 'categoria':
+                $rows = $datosDashboard['polizasPorCategoria'] ?? [];
+                $infoBase['titulo'] = 'Pólizas por categoría';
+                $infoBase['descripcion'] = 'Cantidad de pólizas agrupadas por categoría de seguro.';
+                $infoBase['headers'] = ['Categoría', 'Total'];
                 foreach ($rows as $row) {
-                    $ramo = $row['categoria'] ?? 'Sin categoría';
+                    $categoria = $row['categoria'] ?? 'Sin categoría';
                     $total = (int)($row['total'] ?? 0);
-                    $infoBase['rows'][] = [$ramo, number_format($total, 0, ',', '.')];
-                    $infoBase['rawRows'][] = [$ramo, $total];
+                    $infoBase['rows'][] = [$categoria, number_format($total, 0, ',', '.')];
+                    $infoBase['rawRows'][] = [$categoria, $total];
                 }
-                $infoBase['chartUrl'] = $this->chartUrlPolizasPorRamo($rows);
-                $infoBase['emptyMessage'] = 'Sin datos de pólizas por ramo.';
+                $infoBase['chartUrl'] = $this->chartUrlPolizasPorCategoria($rows);
+                $infoBase['emptyMessage'] = 'Sin datos de pólizas por categoría.';
                 break;
 
             case 'estado':
@@ -538,14 +541,14 @@ class ReporteDashboardExporter
         $fila = $this->escribirTablaSimple(
             $hoja,
             $fila,
-            'Pólizas por ramo',
-            ['Ramo', 'Total'],
+            'Pólizas por categoría',
+            ['Categoría', 'Total'],
             array_map(function ($row) {
                 return [
                     $row['categoria'] ?? 'Sin categoría',
                     (int)($row['total'] ?? 0),
                 ];
-            }, $datos['polizasPorRamo'] ?? [])
+            }, $datos['polizasPorCategoria'] ?? [])
         );
 
         $fila = $this->escribirTablaSimple(

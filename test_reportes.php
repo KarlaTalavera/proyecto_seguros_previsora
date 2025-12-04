@@ -1,9 +1,22 @@
+<?php
+require_once __DIR__ . '/config/asset_paths.php';
+
+$dataTablesCss = resolveAssetPath(
+  'vendor/datatables/dataTables.bootstrap4.min.css',
+  'https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css'
+);
+$jquerySrc = resolveAssetPath('vendor/jquery/jquery.min.js', 'https://code.jquery.com/jquery-3.6.4.min.js');
+$chartJsSrc = resolveAssetPath(
+  'vendor/chart.js/Chart.min.js',
+  'https://cdn.jsdelivr.net/npm/chart.js@2.9.4/dist/Chart.min.js'
+);
+?>
 <!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="utf-8">
   <title>Prueba reportes - Seguros La Previsora</title>
-  <link rel="stylesheet" href="vendor/datatables/dataTables.bootstrap4.min.css">
+  <link rel="stylesheet" href="<?php echo htmlspecialchars($dataTablesCss, ENT_QUOTES, 'UTF-8'); ?>">
   <style>body{font-family:Arial,Helvetica,sans-serif;margin:20px} pre{background:#f7f7f7;padding:10px;border:1px solid #e1e1e1;max-height:240px;overflow:auto} .card{border:1px solid #ddd;padding:12px;margin-bottom:12px;border-radius:6px}</style>
 </head>
 <body>
@@ -40,8 +53,8 @@ UPDATE poliza_cuota SET fecha_vencimiento = DATE_SUB(CURDATE(), INTERVAL 200 DAY
     </pre>
   </div>
 
-  <script src="vendor/jquery/jquery.min.js"></script>
-  <script src="vendor/chart.js/Chart.min.js"></script>
+  <script src="<?php echo htmlspecialchars($jquerySrc, ENT_QUOTES, 'UTF-8'); ?>"></script>
+  <script src="<?php echo htmlspecialchars($chartJsSrc, ENT_QUOTES, 'UTF-8'); ?>"></script>
   <script>
     function showJson(selector, obj){ document.querySelector(selector).textContent = JSON.stringify(obj, null, 2); }
 

@@ -33,11 +33,11 @@ require_once __DIR__ . '/parte_superior.php';
       <div class="row">
         <div class="col-md-6 col-xl-3 mb-4">
           <div class="border rounded h-100 p-3 d-flex flex-column">
-            <h6 class="mb-1">Pólizas por ramo</h6>
-            <p class="text-muted small mb-3">Detalle de pólizas agrupadas por ramo de seguros.</p>
-            <div class="mt-auto btn-group btn-group-sm" role="group" aria-label="Exportar pólizas por ramo">
-              <a class="btn btn-outline-primary" href="controlador/controladorReporte.php?accion=exportar_grafico&amp;grafico=ramo&amp;formato=pdf"><i class="fas fa-file-pdf mr-1"></i>PDF</a>
-              <a class="btn btn-outline-success" href="controlador/controladorReporte.php?accion=exportar_grafico&amp;grafico=ramo&amp;formato=xlsx"><i class="fas fa-file-excel mr-1"></i>Excel</a>
+            <h6 class="mb-1">Pólizas por categoría</h6>
+            <p class="text-muted small mb-3">Detalle de pólizas agrupadas por categoría de seguro.</p>
+            <div class="mt-auto btn-group btn-group-sm" role="group" aria-label="Exportar pólizas por categoría">
+              <a class="btn btn-outline-primary" href="controlador/controladorReporte.php?accion=exportar_grafico&amp;grafico=categoria&amp;formato=pdf"><i class="fas fa-file-pdf mr-1"></i>PDF</a>
+              <a class="btn btn-outline-success" href="controlador/controladorReporte.php?accion=exportar_grafico&amp;grafico=categoria&amp;formato=xlsx"><i class="fas fa-file-excel mr-1"></i>Excel</a>
             </div>
           </div>
         </div>

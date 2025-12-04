@@ -1,5 +1,6 @@
 <?php
 require_once 'parte_superior.php';
+require_once __DIR__ . '/polizas_estilos.php';
 require_once dirname(__DIR__) . '/modelo/modeloPoliza.php';
 require_once dirname(__DIR__) . '/modelo/ModeloTipoPoliza.php';
 
@@ -21,7 +22,7 @@ $estadisticas = $modeloTipoPoliza->obtenerEstadisticasTipos();
     <!-- Botón para agregar nuevo tipo -->
     <div class="row mb-4">
         <div class="col-md-12">
-            <button class="btn btn-primary" data-toggle="modal" data-target="#modalNuevoTipo">
+            <button class="btn-neo btn-neo--primary" data-toggle="modal" data-target="#modalNuevoTipo">
                 <i class="fas fa-plus"></i> Nuevo Tipo de Póliza
             </button>
         </div>
@@ -50,8 +51,8 @@ $estadisticas = $modeloTipoPoliza->obtenerEstadisticasTipos();
                                 <?php foreach ($estadisticas as $estadistica): ?>
                                 <tr>
                                     <td><?php echo htmlspecialchars($estadistica['tipo_poliza']); ?></td>
-                                    <td><span class="badge badge-info"><?php echo htmlspecialchars($estadistica['categoria']); ?></span></td>
-                                    <td><span class="badge badge-primary"><?php echo $estadistica['total_polizas']; ?></span></td>
+                                    <td><span class="badge-soft" data-variant="info"><?php echo htmlspecialchars($estadistica['categoria']); ?></span></td>
+                                    <td><span class="badge-soft" data-variant="aprobado"><?php echo (int)$estadistica['total_polizas']; ?></span></td>
                                     <td>$<?php echo number_format($estadistica['prima_total'] ?? 0, 2); ?></td>
                                     <td>$<?php echo number_format($estadistica['prima_promedio'] ?? 0, 2); ?></td>
                                 </tr>
@@ -86,30 +87,32 @@ $estadisticas = $modeloTipoPoliza->obtenerEstadisticasTipos();
                             <td><?php echo $tipo['id_tipo_poliza']; ?></td>
                             <td><?php echo htmlspecialchars($tipo['nombre_tipo']); ?></td>
                             <td>
-                                <span class="badge badge-secondary">
+                                <span class="badge-soft" data-variant="info">
                                     <?php echo htmlspecialchars($tipo['nombre_categoria']); ?>
                                 </span>
                             </td>
                             <td>
-                                <button class="btn btn-sm btn-info btn-ver-coberturas" 
-                                        data-id="<?php echo $tipo['id_tipo_poliza']; ?>"
-                                        data-nombre="<?php echo htmlspecialchars($tipo['nombre_tipo']); ?>"
-                                        title="Ver Coberturas">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button class="btn btn-sm btn-warning btn-editar" 
-                                        data-id="<?php echo $tipo['id_tipo_poliza']; ?>"
-                                        data-nombre="<?php echo htmlspecialchars($tipo['nombre_tipo']); ?>"
-                                        data-categoria="<?php echo $tipo['id_categoria']; ?>"
-                                        title="Editar">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button class="btn btn-sm btn-danger btn-eliminar" 
-                                        data-id="<?php echo $tipo['id_tipo_poliza']; ?>"
-                                        data-nombre="<?php echo htmlspecialchars($tipo['nombre_tipo']); ?>"
-                                        title="Eliminar">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                                <div>
+                                    <span class="poliza-accion" data-action="detalle"
+                                          data-id="<?php echo $tipo['id_tipo_poliza']; ?>"
+                                          data-nombre="<?php echo htmlspecialchars($tipo['nombre_tipo']); ?>"
+                                          title="Ver Coberturas">
+                                        <i class="fas fa-eye"></i>
+                                    </span>
+                                    <span class="poliza-accion" data-action="editar"
+                                          data-id="<?php echo $tipo['id_tipo_poliza']; ?>"
+                                          data-nombre="<?php echo htmlspecialchars($tipo['nombre_tipo']); ?>"
+                                          data-categoria="<?php echo $tipo['id_categoria']; ?>"
+                                          title="Editar">
+                                        <i class="fas fa-edit"></i>
+                                    </span>
+                                    <span class="poliza-accion" data-action="eliminar"
+                                          data-id="<?php echo $tipo['id_tipo_poliza']; ?>"
+                                          data-nombre="<?php echo htmlspecialchars($tipo['nombre_tipo']); ?>"
+                                          title="Eliminar">
+                                        <i class="fas fa-trash"></i>
+                                    </span>
+                                </div>
                             </td>
                         </tr>
                         <?php endforeach; ?>
@@ -122,7 +125,7 @@ $estadisticas = $modeloTipoPoliza->obtenerEstadisticasTipos();
 </div>
 
 <!-- Modal para nuevo tipo de póliza -->
-<div class="modal fade" id="modalNuevoTipo" tabindex="-1" role="dialog" aria-labelledby="modalNuevoTipoLabel" aria-hidden="true">
+<div class="modal fade modal-consistent" id="modalNuevoTipo" tabindex="-1" role="dialog" aria-labelledby="modalNuevoTipoLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -150,8 +153,8 @@ $estadisticas = $modeloTipoPoliza->obtenerEstadisticasTipos();
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn-neo btn-neo--light" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-neo btn-neo--primary">Guardar</button>
                 </div>
             </form>
         </div>
@@ -159,7 +162,7 @@ $estadisticas = $modeloTipoPoliza->obtenerEstadisticasTipos();
 </div>
 
 <!-- Modal para editar tipo de póliza -->
-<div class="modal fade" id="modalEditarTipo" tabindex="-1" role="dialog" aria-labelledby="modalEditarTipoLabel" aria-hidden="true">
+<div class="modal fade modal-consistent" id="modalEditarTipo" tabindex="-1" role="dialog" aria-labelledby="modalEditarTipoLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -187,8 +190,8 @@ $estadisticas = $modeloTipoPoliza->obtenerEstadisticasTipos();
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Actualizar</button>
+                    <button type="button" class="btn-neo btn-neo--light" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-neo btn-neo--primary">Actualizar</button>
                 </div>
             </form>
         </div>
@@ -196,7 +199,7 @@ $estadisticas = $modeloTipoPoliza->obtenerEstadisticasTipos();
 </div>
 
 <!-- Modal para ver coberturas -->
-<div class="modal fade" id="modalCoberturas" tabindex="-1" role="dialog" aria-labelledby="modalCoberturasLabel" aria-hidden="true">
+<div class="modal fade modal-consistent" id="modalCoberturas" tabindex="-1" role="dialog" aria-labelledby="modalCoberturasLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -225,16 +228,33 @@ $estadisticas = $modeloTipoPoliza->obtenerEstadisticasTipos();
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn-neo btn-neo--light" data-dismiss="modal">Cerrar</button>
             </div>
         </div>
     </div>
 </div>
 
 <?php
-$extra_scripts = '
-<script src="vendor/datatables/jquery.dataTables.min.js"></script>
-<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+$dataTablesCore = htmlspecialchars(
+    resolveAssetPath(
+        'vendor/datatables/jquery.dataTables.min.js',
+        'https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js'
+    ),
+    ENT_QUOTES,
+    'UTF-8'
+);
+$dataTablesBootstrap = htmlspecialchars(
+    resolveAssetPath(
+        'vendor/datatables/dataTables.bootstrap4.min.js',
+        'https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js'
+    ),
+    ENT_QUOTES,
+    'UTF-8'
+);
+
+$extra_scripts = <<<EOT
+<script src="{$dataTablesCore}"></script>
+<script src="{$dataTablesBootstrap}"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <script>
@@ -291,7 +311,7 @@ $(document).ready(function() {
     });
 
     // Mostrar modal de edición
-    $(document).on("click", ".btn-editar", function() {
+    $(document).on("click", ".poliza-accion[data-action='editar']", function() {
         var id = $(this).data("id");
         var nombre = $(this).data("nombre");
         var categoria = $(this).data("categoria");
@@ -339,7 +359,7 @@ $(document).ready(function() {
     });
 
     // Eliminar tipo de póliza
-    $(document).on("click", ".btn-eliminar", function() {
+    $(document).on("click", ".poliza-accion[data-action='eliminar']", function() {
         var id = $(this).data("id");
         var nombre = $(this).data("nombre");
         
@@ -386,7 +406,7 @@ $(document).ready(function() {
     });
 
     // Ver coberturas
-    $(document).on("click", ".btn-ver-coberturas", function() {
+    $(document).on("click", ".poliza-accion[data-action='detalle']", function() {
         var id = $(this).data("id");
         var nombre = $(this).data("nombre");
         
@@ -420,7 +440,7 @@ $(document).ready(function() {
     });
 });
 </script>
-';
+EOT;
 
 require_once 'parte_inferior.php';
 ?>

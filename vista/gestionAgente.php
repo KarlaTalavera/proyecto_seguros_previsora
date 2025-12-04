@@ -399,11 +399,20 @@ if ($resultadoAgentes === false) {
 
 <?php
 require_once __DIR__ . '/parte_inferior.php';
+
+$dataTablesCore = resolveAssetPath(
+	'vendor/datatables/jquery.dataTables.min.js',
+	'https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js'
+);
+$dataTablesBootstrap = resolveAssetPath(
+	'vendor/datatables/dataTables.bootstrap4.min.js',
+	'https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js'
+);
 ?>
 
 <!-- Page level plugins -->
-<script src="vendor/datatables/jquery.dataTables.min.js"></script>
-<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+<script src="<?php echo htmlspecialchars($dataTablesCore, ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script src="<?php echo htmlspecialchars($dataTablesBootstrap, ENT_QUOTES, 'UTF-8'); ?>"></script>
 
 <!-- Page level custom scripts -->
 <script>

@@ -147,7 +147,7 @@ if (isset($_SESSION['mensaje'])) {
     <!-- Botón para agregar nuevo asegurado -->
     <div class="row mb-4">
         <div class="col-md-12">
-            <button class="btn btn-primary" data-toggle="modal" data-target="#modalNuevoAsegurado">
+            <button class="btn-neo btn-neo--primary" data-toggle="modal" data-target="#modalNuevoAsegurado">
                 <i class="fas fa-user-plus"></i> Nuevo Asegurado
             </button>
         </div>
@@ -240,8 +240,8 @@ if (isset($_SESSION['mensaje'])) {
 </div>
 
 <!-- Modal para nuevo asegurado -->
-<div class="modal fade" id="modalNuevoAsegurado" tabindex="-1" role="dialog" aria-labelledby="modalNuevoAseguradoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
+<div class="modal fade modal-consistent" id="modalNuevoAsegurado" tabindex="-1" role="dialog" aria-labelledby="modalNuevoAseguradoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalNuevoAseguradoLabel">Nuevo Asegurado</h5>
@@ -310,8 +310,8 @@ if (isset($_SESSION['mensaje'])) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Guardar</button>
+                    <button type="button" class="btn-neo btn-neo--light" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-neo btn-neo--primary">Guardar</button>
                 </div>
             </form>
         </div>
@@ -319,8 +319,8 @@ if (isset($_SESSION['mensaje'])) {
 </div>
 
 <!-- Modal para editar asegurado -->
-<div class="modal fade" id="modalEditarAsegurado" tabindex="-1" role="dialog" aria-labelledby="modalEditarAseguradoLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg" role="document">
+<div class="modal fade modal-consistent" id="modalEditarAsegurado" tabindex="-1" role="dialog" aria-labelledby="modalEditarAseguradoLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title" id="modalEditarAseguradoLabel">Editar Asegurado</h5>
@@ -376,8 +376,8 @@ if (isset($_SESSION['mensaje'])) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Actualizar</button>
+                    <button type="button" class="btn-neo btn-neo--light" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn-neo btn-neo--primary">Actualizar</button>
                 </div>
             </form>
         </div>
@@ -385,9 +385,26 @@ if (isset($_SESSION['mensaje'])) {
 </div>
 
 <?php
+$dataTablesCore = htmlspecialchars(
+    resolveAssetPath(
+        'vendor/datatables/jquery.dataTables.min.js',
+        'https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js'
+    ),
+    ENT_QUOTES,
+    'UTF-8'
+);
+$dataTablesBootstrap = htmlspecialchars(
+    resolveAssetPath(
+        'vendor/datatables/dataTables.bootstrap4.min.js',
+        'https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js'
+    ),
+    ENT_QUOTES,
+    'UTF-8'
+);
+
 $extra_scripts = <<<HTML
-<script src="vendor/datatables/jquery.dataTables.min.js"></script>
-<script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+<script src="{$dataTablesCore}"></script>
+<script src="{$dataTablesBootstrap}"></script>
 
 <style>
 .badge-pink {

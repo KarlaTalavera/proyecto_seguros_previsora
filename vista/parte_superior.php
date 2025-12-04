@@ -3,6 +3,8 @@ if (session_status() === PHP_SESSION_NONE) {
 	session_start();
 }
 
+require_once dirname(__DIR__) . '/config/asset_paths.php';
+
 $fotoPerfilPath = 'img/undraw_profile.svg';
 if (isset($_SESSION['datos_usuario']) && method_exists($_SESSION['datos_usuario'], 'getFotoPerfil')) {
 	$fotoNombre = $_SESSION['datos_usuario']->getFotoPerfil();
@@ -18,6 +20,16 @@ if (isset($_SESSION['datos_usuario']) && method_exists($_SESSION['datos_usuario'
 
 $permisosSesion = isset($_SESSION['permisos_usuario']) && is_array($_SESSION['permisos_usuario']) ? $_SESSION['permisos_usuario'] : [];
 $puedeGestionarSolicitudes = in_array('solicitud_gestionar', $permisosSesion, true);
+
+$fontAwesomeCss = resolveAssetPath(
+	'vendor/fontawesome-free/css/all.min.css',
+	'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css'
+);
+$sbAdminCss = resolveAssetPath('css/sb-admin-2.min.css', 'css/sb-admin-2.min.css');
+$dataTablesCss = resolveAssetPath(
+	'vendor/datatables/dataTables.bootstrap4.min.css',
+	'https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css'
+);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -41,14 +53,14 @@ $puedeGestionarSolicitudes = in_array('solicitud_gestionar', $permisosSesion, tr
 	</script>
 
 	<!-- Custom fonts for this template-->
-    <link href="vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
+	<link href="<?php echo htmlspecialchars($fontAwesomeCss, ENT_QUOTES, 'UTF-8'); ?>" rel="stylesheet" type="text/css">
 	<link
 		href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
 		rel="stylesheet">
 
     <!-- Custom styles for this template-->
-	<link href="css/sb-admin-2.min.css" rel="stylesheet">
-	<link href="vendor/datatables/dataTables.bootstrap4.min.css" rel="stylesheet">
+	<link href="<?php echo htmlspecialchars($sbAdminCss, ENT_QUOTES, 'UTF-8'); ?>" rel="stylesheet">
+	<link href="<?php echo htmlspecialchars($dataTablesCss, ENT_QUOTES, 'UTF-8'); ?>" rel="stylesheet">
 
 	<style>
 		:root {

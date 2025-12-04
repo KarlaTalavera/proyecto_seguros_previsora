@@ -266,21 +266,21 @@ require_once __DIR__ . "/vista/parte_superior.php";
     </div>
 
     <!-- Bootstrap core JavaScript-->
-    <script src="vendor/jquery/jquery.min.js"></script>
-    <script src="vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="<?php echo htmlspecialchars(resolveAssetPath('vendor/jquery/jquery.min.js', 'https://code.jquery.com/jquery-3.6.4.min.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+    <script src="<?php echo htmlspecialchars(resolveAssetPath('vendor/bootstrap/js/bootstrap.bundle.min.js', 'https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 
     <!-- Core plugin JavaScript-->
-    <script src="vendor/jquery-easing/jquery.easing.min.js"></script>
+    <script src="<?php echo htmlspecialchars(resolveAssetPath('vendor/jquery-easing/jquery.easing.min.js', 'https://cdnjs.cloudflare.com/ajax/libs/jquery-easing/1.4.1/jquery.easing.min.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 
     <!-- Custom scripts for all pages-->
-    <script src="js/sb-admin-2.min.js"></script>
+    <script src="<?php echo htmlspecialchars(resolveAssetPath('js/sb-admin-2.min.js', 'js/sb-admin-2.min.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 
     <!-- Page level plugins -->
-    <script src="vendor/datatables/jquery.dataTables.min.js"></script>
-    <script src="vendor/datatables/dataTables.bootstrap4.min.js"></script>
+    <script src="<?php echo htmlspecialchars(resolveAssetPath('vendor/datatables/jquery.dataTables.min.js', 'https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
+    <script src="<?php echo htmlspecialchars(resolveAssetPath('vendor/datatables/dataTables.bootstrap4.min.js', 'https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 
     <!-- Page level custom scripts -->
-    <script src="js/demo/datatables-demo.js"></script>
+    <script src="<?php echo htmlspecialchars(resolveAssetPath('js/demo/datatables-demo.js', 'js/demo/datatables-demo.js'), ENT_QUOTES, 'UTF-8'); ?>"></script>
 
 </body>
 
