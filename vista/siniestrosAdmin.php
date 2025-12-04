@@ -47,90 +47,102 @@ $polizasActivas = $modeloSiniestro->obtenerPolizasActivas() ?: [];
 $agentesActivos = $modeloSiniestro->obtenerAgentesActivos() ?: [];
 ?>
 <div class="container-fluid">
-  <div class="d-sm-flex align-items-center justify-content-between mb-4">
-    <div>
-      <h1 class="h3 mb-0 text-gray-800">Gestión de Siniestros</h1>
-      <p class="text-muted mb-0 small">Administre reclamos, actualice estados y genere reportes consolidados.</p>
-    </div>
-    <div class="siniestros-toolbar">
-      <button type="button" class="btn-neo btn-neo--light" id="exportarSiniestrosCsv">Exportar CSV</button>
-      <button type="button" class="btn-main-action" data-toggle="modal" data-target="#registrarSiniestroModal">
-        <span class="btn-main-action__label">Registrar Siniestro</span>
-        <span class="btn-main-action__icon">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"></line>
-            <line x1="5" y1="12" x2="19" y2="12"></line>
-          </svg>
-        </span>
-      </button>
-    </div>
-  </div>
-
-  <div class="row">
-    <div class="col-lg-3 col-md-6 mb-4">
-      <div class="card card-neo h-100 p-3">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <div class="text-muted text-uppercase small font-weight-bold">Total siniestros</div>
-            <div class="h4 mb-0"><?php echo $totales['total']; ?></div>
+  <!-- Tarjetas de estadísticas -->
+  <div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-primary shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Total Siniestros</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $totalSiniestros; ?></div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-exclamation-triangle fa-2x text-gray-300"></i>
+            </div>
           </div>
-          <i class="fas fa-clipboard-list text-primary fa-lg"></i>
         </div>
       </div>
     </div>
-    <div class="col-lg-3 col-md-6 mb-4">
-      <div class="card card-neo h-100 p-3">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <div class="text-muted text-uppercase small font-weight-bold">Abiertos</div>
-            <div class="h4 mb-0"><?php echo $totales['abiertos']; ?></div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-warning shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Abiertos</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $totalAbiertos; ?></div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-clock fa-2x text-gray-300"></i>
+            </div>
           </div>
-          <i class="fas fa-exclamation-triangle text-warning fa-lg"></i>
         </div>
       </div>
     </div>
-    <div class="col-lg-3 col-md-6 mb-4">
-      <div class="card card-neo h-100 p-3">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <div class="text-muted text-uppercase small font-weight-bold">En revisión</div>
-            <div class="h4 mb-0"><?php echo $totales['revision']; ?></div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-success shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Cerrados</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo $totalCerrados; ?></div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+            </div>
           </div>
           <i class="fas fa-user-check text-info fa-lg"></i>
         </div>
       </div>
     </div>
-    <div class="col-lg-3 col-md-6 mb-4">
-      <div class="card card-neo h-100 p-3">
-        <div class="d-flex justify-content-between align-items-center">
-          <div>
-            <div class="text-muted text-uppercase small font-weight-bold">Monto total</div>
-            <div class="h4 mb-0">$<?php echo number_format($totales['monto'], 2, ',', '.'); ?></div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+      <div class="card border-left-info shadow h-100 py-2">
+        <div class="card-body">
+          <div class="row no-gutters align-items-center">
+            <div class="col mr-2">
+              <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Monto Total</div>
+              <div class="h5 mb-0 font-weight-bold text-gray-800">$<?php echo number_format($totalMonto, 2, ',', '.'); ?></div>
+            </div>
+            <div class="col-auto">
+              <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+            </div>
           </div>
-          <i class="fas fa-coins text-success fa-lg"></i>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="card card-neo">
+  
+  <!-- Tabla de siniestros -->
+  <div class="d-flex justify-content-between mb-3">
+    <h3>Gestión de Siniestros</h3>
+    <button class="btn btn-primary" data-toggle="modal" data-target="#newClaimModal">
+      <i class="fas fa-plus"></i> Añadir Nuevo Siniestro
+    </button>
+  </div>
+
+  <div class="card">
     <div class="card-body">
-      <div class="table-responsive">
-        <table id="siniestrosTable" class="table table-striped table-hover align-middle">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Número</th>
-              <th>Póliza</th>
-              <th>Cliente</th>
-              <th>Agente</th>
-              <th>Fecha Reporte</th>
-              <th>Monto</th>
-              <th>Estado</th>
-              <th>Acciones</th>
-            </tr>
-          </thead>
-          <tbody>
+      <table id="claimsTable" class="table table-striped w-100">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Número Siniestro</th>
+            <th>Póliza</th>
+            <th>Cliente</th>
+            <th>Fecha Reporte</th>
+            <th>Descripción</th>
+            <th>Monto Estimado</th>
+            <th>Estado</th>
+            <th>Agente</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          <?php if (!empty($siniestros)): ?>
             <?php foreach ($siniestros as $siniestro): ?>
               <?php
                 $estado = strtoupper($siniestro['estado'] ?? '');
@@ -201,27 +213,29 @@ $agentesActivos = $modeloSiniestro->obtenerAgentesActivos() ?: [];
                   <option value="<?php echo htmlspecialchars($agente['cedula_agente']); ?>">
                     <?php echo htmlspecialchars($agente['nombre_completo']); ?>
                   </option>
-                <?php endforeach; ?>
-              </select>
+                  <?php endforeach; ?>
+                </select>
+              </div>
             </div>
           </div>
-          <div class="form-row">
-            <div class="form-group col-md-4">
-              <label for="fecha_incidente">Fecha del incidente *</label>
-              <input type="date" class="form-control" id="fecha_incidente" name="fecha_incidente" required>
+          
+          <div class="row">
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="fecha_incidente">Fecha Incidente *</label>
+                <input type="date" class="form-control" name="fecha_incidente" id="fecha_incidente" required>
+              </div>
             </div>
-            <div class="form-group col-md-4">
-              <label for="estado">Estado inicial *</label>
-              <select class="form-control" id="estado" name="estado" required>
-                <option value="ABIERTO">Abierto</option>
-                <option value="EN PROCESO">En proceso</option>
-                <option value="CERRADO">Cerrado</option>
-                <option value="RECHAZADO">Rechazado</option>
-              </select>
-            </div>
-            <div class="form-group col-md-4">
-              <label for="monto_reclamo">Monto estimado ($) *</label>
-              <input type="number" step="0.01" min="0" class="form-control" id="monto_reclamo" name="monto_reclamo" required>
+            <div class="col-md-6">
+              <div class="form-group">
+                <label for="estado">Estado *</label>
+                <select class="form-control" name="estado" id="estado" required>
+                  <option value="ABIERTO">Abierto</option>
+                  <option value="EN PROCESO">En Proceso</option>
+                  <option value="CERRADO">Cerrado</option>
+                  <option value="RECHAZADO">Rechazado</option>
+                </select>
+              </div>
             </div>
           </div>
           <div class="form-group">
@@ -265,43 +279,15 @@ $agentesActivos = $modeloSiniestro->obtenerAgentesActivos() ?: [];
         <h5 class="modal-title" id="editarSiniestroModalLabel">Editar Siniestro</h5>
         <button class="close" type="button" data-dismiss="modal" aria-label="Cerrar"><span aria-hidden="true">&times;</span></button>
       </div>
-      <form id="editarSiniestroForm">
-        <div class="modal-body">
-          <input type="hidden" id="id_siniestro_edit" name="id_siniestro">
-          <div class="form-row">
-            <div class="form-group col-md-6">
-              <label for="numero_siniestro_edit">Número de siniestro</label>
-              <input type="text" class="form-control" id="numero_siniestro_edit" readonly>
+      <form id="editClaimForm">
+        <input type="hidden" name="id_siniestro" id="edit_id_siniestro">
+        <div class="modal-body" id="editClaimContent">
+          <div class="text-center">
+            <div class="spinner-border text-primary" role="status">
+              <span class="sr-only">Cargando...</span>
             </div>
-            <div class="form-group col-md-6">
-              <label for="poliza_edit">Póliza</label>
-              <input type="text" class="form-control" id="poliza_edit" readonly>
-            </div>
+            <p>Cargando información...</p>
           </div>
-          <div class="form-row">
-            <div class="form-group col-md-4">
-              <label for="fecha_incidente_edit">Fecha del incidente *</label>
-              <input type="date" class="form-control" id="fecha_incidente_edit" name="fecha_incidente" required>
-            </div>
-            <div class="form-group col-md-4">
-              <label for="estado_edit">Estado *</label>
-              <select class="form-control" id="estado_edit" name="estado" required>
-                <option value="ABIERTO">Abierto</option>
-                <option value="EN PROCESO">En proceso</option>
-                <option value="CERRADO">Cerrado</option>
-                <option value="RECHAZADO">Rechazado</option>
-              </select>
-            </div>
-            <div class="form-group col-md-4">
-              <label for="monto_reclamo_edit">Monto estimado ($) *</label>
-              <input type="number" step="0.01" min="0" class="form-control" id="monto_reclamo_edit" name="monto_reclamo" required>
-            </div>
-          </div>
-          <div class="form-group">
-            <label for="descripcion_edit">Descripción *</label>
-            <textarea class="form-control" id="descripcion_edit" name="descripcion" rows="4" required></textarea>
-          </div>
-          <div id="editarSiniestroRespuesta" style="display:none;"></div>
         </div>
         <div class="modal-footer">
           <button class="btn-neo btn-neo--light" type="button" data-dismiss="modal">Cancelar</button>
@@ -350,204 +336,177 @@ $agentesActivos = $modeloSiniestro->obtenerAgentesActivos() ?: [];
 </div>
 
 <?php
-$extra_scripts = <<<'EOT'
+$extra_scripts = <<<EOT
+<!-- Toastr CSS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
+<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+<!-- Toastr JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
 <script>
-$(function() {
-  var tablaSiniestros = $('#siniestrosTable').DataTable({
-    dom: 'Bfrtip',
-    buttons: [
-      { extend: 'copy', text: '<i class="fas fa-copy"></i> Copiar' },
-      { extend: 'csv', text: '<i class="fas fa-file-csv"></i> CSV' },
-      { extend: 'excel', text: '<i class="fas fa-file-excel"></i> Excel' },
-      { extend: 'print', text: '<i class="fas fa-print"></i> Imprimir' }
-    ],
-    language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json' },
-    pageLength: 10,
-    order: [[0, 'desc']]
-  });
-
-  $('#exportarSiniestrosCsv').on('click', function() {
-    tablaSiniestros.button('.buttons-csv').trigger('click');
-  });
-
-  function mostrarMensaje($target, mensaje, tipo) {
-    if (!$target.length) {
-      alert(mensaje);
-      return;
+$(document).ready(function() {
+    // RUTA ABSOLUTAMENTE CORRECTA para tu estructura:
+    // XAMPP en C:\\xampp\\htdocs\\proyecto_seguros_previsora\\controlador\\controladorSiniestro.php
+    var controladorUrl = '/proyecto_seguros_previsora/controlador/controladorSiniestro.php';
+    
+    console.log('Ruta CORREGIDA:', controladorUrl);
+    console.log('URL completa: http://localhost' + controladorUrl);
+    
+    // Verificar que el archivo existe
+    $.ajax({
+        url: controladorUrl,
+        type: 'HEAD',
+        success: function() {
+            console.log('CONTROLADOR ENCONTRADO!');
+            inicializarAplicacion();
+        },
+        error: function() {
+            console.error('ERROR: Archivo no encontrado en:', controladorUrl);
+            alert('CRÍTICO: El archivo controladorSiniestro.php NO existe en:\\n\\n' +
+                  'http://localhost' + controladorUrl + '\\n\\n' +
+                  'Pero tú dijiste que está en:\\n' +
+                  'C:\\\\xampp\\\\htdocs\\\\mi_proyecto\\\\controlador\\\\controladorSiniestro.php\\n\\n' +
+                  '¿Estás seguro que el archivo existe? ¿La carpeta se llama "mi_proyecto" exactamente?');
+        }
+    });
+    
+    function inicializarAplicacion() {
+        console.log('Inicializando aplicación...');
+        
+        // 1. Inicializar DataTable
+        var table = $('#claimsTable').DataTable({
+            dom: 'Bfrtip',
+            buttons: [
+                { extend: 'copy', text: '<i class="fas fa-copy"></i> Copiar' },
+                { extend: 'csv', text: '<i class="fas fa-file-csv"></i> CSV' },
+                { extend: 'excel', text: '<i class="fas fa-file-excel"></i> Excel' },
+                { extend: 'pdf', text: '<i class="fas fa-file-pdf"></i> PDF' },
+                { extend: 'print', text: '<i class="fas fa-print"></i> Imprimir' }
+            ],
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json' },
+            responsive: true,
+            pageLength: 25,
+            order: [[0, 'desc']]
+        });
+        
+        // 2. Configurar fechas
+        var today = new Date().toISOString().split('T')[0];
+        $('#fecha_incidente').val(today);
+        $('#fecha_pago').val(today);
+        
+        // 3. BOTÓN PRINCIPAL: AÑADIR NUEVO SINIESTRO
+        $('#claimForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            console.log('ENVIANDO FORMULARIO...');
+            
+            // Validación simple
+            if (!$('#id_poliza').val() || !$('#cedula_agente_gestion').val()) {
+                alert('Seleccione una póliza y un agente');
+                return;
+            }
+            
+            // Crear FormData
+            var formData = new FormData(this);
+            formData.append('accion', 'crear_siniestro');
+            
+            // Mostrar datos en consola
+            for (var pair of formData.entries()) {
+                console.log(pair[0] + ': ' + pair[1]);
+            }
+            
+            // Enviar AJAX
+            $.ajax({
+                url: controladorUrl,
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#claimForm button[type="submit"]')
+                        .prop('disabled', true)
+                        .html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+                },
+                success: function(response) {
+                    console.log('RESPUESTA:', response);
+                    
+                    if (response && response.success) {
+                        alert('ÉXITO: ' + response.message);
+                        $('#newClaimModal').modal('hide');
+                        $('#claimForm')[0].reset();
+                        
+                        // Recargar página
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        alert('ERROR: ' + (response.message || 'Error desconocido'));
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('ERROR AJAX:', status, error);
+                    alert('ERROR DE CONEXIÓN\\n\\n' +
+                          'Status: ' + status + '\\n' +
+                          'Error: ' + error + '\\n\\n' +
+                          '¿El archivo controlador existe? ¿Tiene permisos?');
+                },
+                complete: function() {
+                    $('#claimForm button[type="submit"]')
+                        .prop('disabled', false)
+                        .html('<i class="fas fa-save"></i> Guardar');
+                }
+            });
+        });
+        
+        // 4. Botón de búsqueda
+        $('#btnBuscar').on('click', function() {
+            var datos = {
+                accion: 'buscar_siniestros',
+                estado: $('#filtroEstado').val(),
+                fecha_desde: $('#filtroFechaDesde').val(),
+                fecha_hasta: $('#filtroFechaHasta').val(),
+                numero_poliza: $('#filtroPoliza').val()
+            };
+            
+            $.ajax({
+                url: controladorUrl,
+                type: 'GET',
+                data: datos,
+                dataType: 'json',
+                success: function(response) {
+                    console.log('Búsqueda:', response);
+                    // Tu código para actualizar la tabla
+                }
+            });
+        });
+        
+        // 5. Funciones para ver/editar/eliminar
+        $('#claimsTable').on('click', '.btn-view', function() {
+            var id = $(this).data('id');
+            $.ajax({
+                url: controladorUrl,
+                type: 'GET',
+                data: { accion: 'obtener_siniestro', id_siniestro: id },
+                dataType: 'json',
+                success: function(response) {
+                    // Tu código para mostrar detalles
+                }
+            });
+        });
+        
+        console.log('APLICACIÓN INICIALIZADA CORRECTAMENTE');
     }
-    var clase = tipo === 'success' ? 'alert-success' : 'alert-danger';
-    $target.html('<div class="alert ' + clase + ' mb-0">' + mensaje + '</div>').show();
-  }
-
-  function cargarDetalleSiniestro(id, callback) {
-    $.ajax({
-      url: 'controlador/controladorSiniestro.php',
-      type: 'GET',
-      dataType: 'json',
-      data: { accion: 'obtener_siniestro', id_siniestro: id },
-      success: function(respuesta) {
-        if (respuesta.success && respuesta.data) {
-          callback(respuesta.data);
-        } else {
-          alert(respuesta.message || 'No se pudo obtener el siniestro.');
-        }
-      },
-      error: function() {
-        alert('Error de conexión con el servidor.');
-      }
-    });
-  }
-
-  $('#registrarSiniestroModal').on('show.bs.modal', function() {
-    var formulario = $('#registrarSiniestroForm')[0];
-    if (formulario) {
-      formulario.reset();
-    }
-    $('#registrarSiniestroRespuesta').hide().empty();
-    var hoy = new Date().toISOString().split('T')[0];
-    $('#fecha_incidente').val(hoy);
-  });
-
-  $('#registrarSiniestroForm').on('submit', function(evento) {
-    evento.preventDefault();
-    var $boton = $('#guardarSiniestroBtn');
-    $('#registrarSiniestroRespuesta').hide().empty();
-    $boton.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Guardando...');
-    $.ajax({
-      url: 'controlador/controladorSiniestro.php',
-      type: 'POST',
-      dataType: 'json',
-      data: $(this).serialize() + '&accion=crear_siniestro',
-      success: function(respuesta) {
-        if (respuesta.success) {
-          mostrarMensaje($('#registrarSiniestroRespuesta'), respuesta.message || 'Siniestro registrado correctamente.', 'success');
-          setTimeout(function() { window.location.reload(); }, 1200);
-        } else {
-          mostrarMensaje($('#registrarSiniestroRespuesta'), respuesta.message || 'No se pudo registrar el siniestro.', 'error');
-        }
-      },
-      error: function() {
-        mostrarMensaje($('#registrarSiniestroRespuesta'), 'Error de conexión con el servidor.', 'error');
-      },
-      complete: function() {
-        $boton.prop('disabled', false).text('Guardar');
-      }
-    });
-  });
-
-  $(document).on('click', '.btn-ver-siniestro', function() {
-    var id = $(this).data('id');
-    $('#detalleSiniestroBody').html('<p class="text-center mb-0"><span class="spinner-border spinner-border-sm"></span> Cargando información...</p>');
-    $('#detalleSiniestroModal').modal('show');
-    cargarDetalleSiniestro(id, function(data) {
-      var contenido = '<div class="row">' +
-        '<div class="col-md-6">' +
-          '<p><strong>Número:</strong> ' + (data.numero_siniestro || '-') + '</p>' +
-          '<p><strong>Póliza:</strong> ' + (data.numero_poliza || '-') + '</p>' +
-          '<p><strong>Cliente:</strong> ' + (data.nombre_cliente || '-') + '</p>' +
-          '<p><strong>Agente:</strong> ' + (data.nombre_agente || '-') + '</p>' +
-        '</div>' +
-        '<div class="col-md-6">' +
-          '<p><strong>Fecha reporte:</strong> ' + (data.fecha_reporte || '-') + '</p>' +
-          '<p><strong>Monto estimado:</strong> $' + (parseFloat(data.monto_estimado || 0).toFixed(2)) + '</p>' +
-          '<p><strong>Estado:</strong> ' + (data.estado || '-') + '</p>' +
-        '</div>' +
-      '</div>' +
-      '<hr>' +
-      '<p><strong>Descripción del siniestro</strong></p>' +
-      '<div class="alert alert-light" role="alert">' + (data.descripcion || '-') + '</div>';
-      $('#detalleSiniestroBody').html(contenido);
-    });
-  });
-
-  $(document).on('click', '.btn-editar-siniestro', function() {
-    var id = $(this).data('id');
-    $('#editarSiniestroRespuesta').hide().empty();
-    cargarDetalleSiniestro(id, function(data) {
-      $('#id_siniestro_edit').val(data.id_siniestro || id);
-      $('#numero_siniestro_edit').val(data.numero_siniestro || '');
-      $('#poliza_edit').val(data.numero_poliza || '');
-      var fecha = data.fecha_reporte ? data.fecha_reporte.substring(0, 10) : '';
-      $('#fecha_incidente_edit').val(fecha);
-      $('#estado_edit').val((data.estado || 'ABIERTO').toUpperCase());
-      $('#monto_reclamo_edit').val(data.monto_estimado || 0);
-      $('#descripcion_edit').val(data.descripcion || '');
-      $('#editarSiniestroModal').modal('show');
-    });
-  });
-
-  $('#editarSiniestroForm').on('submit', function(evento) {
-    evento.preventDefault();
-    var $boton = $('#guardarCambiosSiniestroBtn');
-    $('#editarSiniestroRespuesta').hide().empty();
-    $boton.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Guardando...');
-    $.ajax({
-      url: 'controlador/controladorSiniestro.php',
-      type: 'POST',
-      dataType: 'json',
-      data: $(this).serialize() + '&accion=actualizar_siniestro',
-      success: function(respuesta) {
-        if (respuesta.success) {
-          mostrarMensaje($('#editarSiniestroRespuesta'), respuesta.message || 'Siniestro actualizado correctamente.', 'success');
-          setTimeout(function() { window.location.reload(); }, 1200);
-        } else {
-          mostrarMensaje($('#editarSiniestroRespuesta'), respuesta.message || 'No se pudo actualizar el siniestro.', 'error');
-        }
-      },
-      error: function() {
-        mostrarMensaje($('#editarSiniestroRespuesta'), 'Error de conexión con el servidor.', 'error');
-      },
-      complete: function() {
-        $boton.prop('disabled', false).text('Guardar Cambios');
-      }
-    });
-  });
-
-  $(document).on('click', '.btn-registrar-pago', function() {
-    var id = $(this).data('id');
-    $('#id_siniestro_pago').val(id);
-    $('#pagoSiniestroRespuesta').hide().empty();
-    var hoy = new Date().toISOString().split('T')[0];
-    $('#fecha_pago').val(hoy);
-    $('#monto_pago').val('');
-    $('#comentario_pago').val('');
-    $('#pagoSiniestroModal').modal('show');
-  });
-
-  $('#pagoSiniestroForm').on('submit', function(evento) {
-    evento.preventDefault();
-    var $boton = $('#registrarPagoBtn');
-    $('#pagoSiniestroRespuesta').hide().empty();
-    $boton.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Procesando...');
-    $.ajax({
-      url: 'controlador/controladorSiniestro.php',
-      type: 'POST',
-      dataType: 'json',
-      data: $(this).serialize() + '&accion=registrar_pago',
-      success: function(respuesta) {
-        if (respuesta.success) {
-          mostrarMensaje($('#pagoSiniestroRespuesta'), respuesta.message || 'Pago registrado correctamente.', 'success');
-          setTimeout(function() { window.location.reload(); }, 1200);
-        } else {
-          mostrarMensaje($('#pagoSiniestroRespuesta'), respuesta.message || 'No se pudo registrar el pago.', 'error');
-        }
-      },
-      error: function() {
-        mostrarMensaje($('#pagoSiniestroRespuesta'), 'Error de conexión con el servidor.', 'error');
-      },
-      complete: function() {
-        $boton.prop('disabled', false).text('Registrar Pago');
-      }
-    });
-  });
 });
 </script>
 EOT;
-require_once __DIR__ . '/parte_inferior.php';
+
+require_once __DIR__ . "/parte_inferior.php";
 ?>

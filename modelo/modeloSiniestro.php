@@ -363,7 +363,8 @@ class ModeloSiniestro {
             $sql = "SELECT 
                         s.*,
                         p.numero_poliza,
-                        CONCAT(c.nombre, ' ', c.apellido) AS nombre_cliente
+                        CONCAT(c.nombre, ' ', c.apellido) AS nombre_cliente,
+                        s.cedula_agente_gestion
                     FROM siniestro s
                     JOIN poliza p ON s.id_poliza = p.id_poliza
                     JOIN cliente c ON p.id_cliente = c.id_cliente
@@ -379,13 +380,13 @@ class ModeloSiniestro {
             
             // Filtro por fecha desde
             if (!empty($filtros['fecha_desde'])) {
-                $sql .= " AND s.fecha_reporte >= :fecha_desde";
+                $sql .= " AND DATE(s.fecha_reporte) >= :fecha_desde";
                 $params[':fecha_desde'] = $filtros['fecha_desde'];
             }
             
             // Filtro por fecha hasta
             if (!empty($filtros['fecha_hasta'])) {
-                $sql .= " AND s.fecha_reporte <= :fecha_hasta";
+                $sql .= " AND DATE(s.fecha_reporte) <= :fecha_hasta";
                 $params[':fecha_hasta'] = $filtros['fecha_hasta'];
             }
             
@@ -393,6 +394,12 @@ class ModeloSiniestro {
             if (!empty($filtros['numero_poliza'])) {
                 $sql .= " AND p.numero_poliza LIKE :numero_poliza";
                 $params[':numero_poliza'] = '%' . $filtros['numero_poliza'] . '%';
+            }
+            
+            // Filtro por agente (si se proporciona)
+            if (!empty($filtros['cedula_agente'])) {
+                $sql .= " AND s.cedula_agente_gestion = :cedula_agente";
+                $params[':cedula_agente'] = $filtros['cedula_agente'];
             }
             
             $sql .= " ORDER BY s.fecha_reporte DESC";
