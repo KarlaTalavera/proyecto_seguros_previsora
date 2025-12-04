@@ -7,35 +7,38 @@ require_once __DIR__ . '/parte_superior.php';
 ?>
 
 <div class="container-fluid">
-  <h3>Dashboard Gerencial</h3>
+  <div class="mb-3">
+    <h3 class="mb-0">Dashboard Gerencial</h3>
+    <small class="text-muted">Actualizado automáticamente</small>
+  </div>
 
   <div class="row mt-3">
     <div class="col-md-3">
-      <div class="card p-3 border-0 shadow-sm bg-white rounded">
+      <div class="card kpi-card p-3">
         <div class="small text-muted">Pólizas con Pagos Pendientes</div>
-        <h4 id="k_pendientes_pct" class="text-secondary">—</h4>
-        <div class="mt-2" style="height:4px;width:40px;background:#f1f3f5;border-radius:2px;"></div>
+        <h4 id="k_pendientes_pct" class="kpi-value">—</h4>
+        <div class="kpi-card__spark"></div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card p-3 border-0 shadow-sm bg-white rounded">
+      <div class="card kpi-card p-3">
         <div class="small text-muted">Primas Pagadas</div>
-        <h4 id="k_primas_pagadas" class="text-secondary">—</h4>
-        <div class="mt-2" style="height:4px;width:40px;background:#f1f3f5;border-radius:2px;"></div>
+        <h4 id="k_primas_pagadas" class="kpi-value">—</h4>
+        <div class="kpi-card__spark"></div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card p-3 border-0 shadow-sm bg-white rounded">
+      <div class="card kpi-card p-3">
         <div class="small text-muted">Agentes Activos</div>
-        <h4 id="k_agentes_activos" class="text-secondary">—</h4>
-        <div class="mt-2" style="height:4px;width:40px;background:#f1f3f5;border-radius:2px;"></div>
+        <h4 id="k_agentes_activos" class="kpi-value">—</h4>
+        <div class="kpi-card__spark"></div>
       </div>
     </div>
     <div class="col-md-3">
-      <div class="card p-3 border-0 shadow-sm bg-white rounded">
+      <div class="card kpi-card p-3">
         <div class="small text-muted">Siniestros Abiertos</div>
-        <h4 id="k_siniestros_abiertos" class="text-secondary">—</h4>
-        <div class="mt-2" style="height:4px;width:40px;background:#f1f3f5;border-radius:2px;"></div>
+        <h4 id="k_siniestros_abiertos" class="kpi-value">—</h4>
+        <div class="kpi-card__spark"></div>
       </div>
     </div>
   </div>
@@ -53,10 +56,10 @@ require_once __DIR__ . '/parte_superior.php';
         </div>
       </div>
       <div class="col-lg-3">
-        <div class="card p-3"><h6>Estado de las Pólizas</h6><div class="chart-wrapper" style="height:240px;"><canvas id="r4Chart" style="width:100%;height:100%;"></canvas></div></div>
+          <div class="card dashboard-card"><h6>Estado de las Pólizas</h6><div class="chart-wrapper" style="height:240px;"><canvas id="r4Chart" style="width:100%;height:100%;"></canvas></div></div>
       </div>
       <div class="col-lg-3">
-        <div class="card p-3"><h6>Ranking Productividad</h6><div class="chart-wrapper" style="height:240px;"><canvas id="r8Chart" style="width:100%;height:100%;"></canvas></div></div>
+          <div class="card dashboard-card"><h6>Ranking Productividad</h6><div class="chart-wrapper" style="height:240px;"><canvas id="r8Chart" style="width:100%;height:100%;"></canvas></div></div>
       </div>
     </div>
   </div>
@@ -90,7 +93,8 @@ require_once __DIR__ . '/parte_superior.php';
   // R4: distribución de estados de póliza
     $.getJSON('controlador/controladorReporte.php', { accion: 'r4' }, function(res){
       const container = $('#r4Chart').parent();
-      container.find('.chart-note').remove();
+      const card = container.closest('.dashboard-card').length ? container.closest('.dashboard-card') : container;
+      card.find('.chart-note').remove();
       if (res.success && Array.isArray(res.data) && res.data.length) {
         const rows = res.data;
         const labelizeEstado = function(estado){
@@ -101,13 +105,19 @@ require_once __DIR__ . '/parte_superior.php';
             .map(function(part){ return part.charAt(0).toUpperCase() + part.slice(1); })
             .join(' ');
         };
-        const labels = rows.map(function(row){ return labelizeEstado(row.estado); });
+        const labels = rows.map(function(row){
+          const estadoRaw = row.estado || '';
+          if (estadoRaw && estadoRaw.toUpperCase() === 'ELIMINADA') {
+            return 'Inactiva';
+          }
+          return labelizeEstado(estadoRaw);
+        });
         const data = rows.map(function(row){ return parseInt(row.total || 0, 10); });
         const hasData = data.some(function(value){ return value > 0; });
         if (!hasData) {
           try { if (window.r4ChartInstance) { window.r4ChartInstance.destroy(); } } catch (e) {}
           window.r4ChartInstance = null;
-          container.append('<div class="text-center text-muted small mt-2 chart-note">No hay pólizas registradas.</div>');
+          card.append('<div class="text-center text-muted small mt-2 chart-note chart-note--inline">No hay pólizas registradas.</div>');
           return;
         }
         const colors = labels.map(function(_, idx){ return palette[idx % palette.length]; });
@@ -121,22 +131,26 @@ require_once __DIR__ . '/parte_superior.php';
             plugins: { legend: { position: 'bottom' } }
           }
         });
-        container.append('<div class="small text-muted mt-2 chart-note">Distribución por estado de las pólizas registradas.</div>');
+        card.append('<div class="small text-muted mt-2 chart-note chart-note--inline">Distribución por estado de las pólizas registradas.</div>');
       } else {
         try { if (window.r4ChartInstance) { window.r4ChartInstance.destroy(); } } catch (e) {}
         window.r4ChartInstance = null;
-        container.append('<div class="text-center text-muted small mt-2 chart-note">No hay datos de estados de póliza.</div>');
+        card.append('<div class="text-center text-muted small mt-2 chart-note">No hay datos de estados de póliza.</div>');
       }
     }).fail(function(){
       const container = $('#r4Chart').parent();
-      container.find('.chart-note').remove();
+      const card = container.closest('.dashboard-card').length ? container.closest('.dashboard-card') : container;
+      card.find('.chart-note').remove();
       try { if (window.r4ChartInstance) { window.r4ChartInstance.destroy(); } } catch (e) {}
       window.r4ChartInstance = null;
-      container.append('<div class="text-center text-danger small mt-2 chart-note">Error cargando estados de póliza.</div>');
+      card.append('<div class="text-center text-danger small mt-2 chart-note">Error cargando estados de póliza.</div>');
     });
 
     // R8: ranking productividad
     $.getJSON('controlador/controladorReporte.php', { accion: 'r8', months: 12, limit: 10 }, function(res){
+      const container = $('#r8Chart').parent();
+      const card = container.closest('.dashboard-card').length ? container.closest('.dashboard-card') : container;
+      card.find('.chart-note').remove();
       if (res.success && res.data && res.data.length) {
         const labels = res.data.map(r => (r.nombre ? (r.nombre + ' ' + r.apellido) : r.cedula_agente));
         const values = res.data.map(r => parseInt(r.num_polizas||0));
@@ -146,10 +160,13 @@ require_once __DIR__ . '/parte_superior.php';
           options: { indexAxis: 'y', maintainAspectRatio: false, plugins:{legend:{display:false}} }
         });
       } else {
-        $('#r8Chart').parent().append('<div class="text-center text-muted small mt-2">No hay datos de productividad.</div>');
+        card.append('<div class="text-center text-muted small mt-2 chart-note">No hay datos de productividad.</div>');
       }
     }).fail(function(){
-      $('#r8Chart').parent().append('<div class="text-center text-danger small mt-2">Error cargando ranking.</div>');
+      const container = $('#r8Chart').parent();
+      const card = container.closest('.dashboard-card').length ? container.closest('.dashboard-card') : container;
+      card.find('.chart-note').remove();
+      card.append('<div class="text-center text-danger small mt-2 chart-note">Error cargando ranking.</div>');
     });
     // R: Pólizas por Ramo (barra)
     $.getJSON('controlador/controladorReporte.php', { accion: 'r_ramo' }, function(res){

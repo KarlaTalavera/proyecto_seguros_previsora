@@ -1,11 +1,34 @@
 <?php
+require_once '../modelo/modeloUsuario.php';
 require_once '../modelo/modeloPermiso.php';
 
-// Establecer la cabecera para devolver contenido JSON
 header('Content-Type: application/json');
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$usuarioActual = $_SESSION['datos_usuario'] ?? null;
+$sesionActiva = isset($_SESSION['usuario_conectado']) ? (bool)$_SESSION['usuario_conectado'] : false;
+
+if (!$sesionActiva || !$usuarioActual) {
+    echo json_encode(['estado' => 'error', 'mensaje' => 'Sesión no válida.']);
+    exit;
+}
+
+$esAdmin = false;
+if (is_object($usuarioActual) && method_exists($usuarioActual, 'getNombreRol')) {
+    $esAdmin = strtolower((string)$usuarioActual->getNombreRol()) === 'administrador';
+} elseif (is_array($usuarioActual) && isset($usuarioActual['rol'])) {
+    $esAdmin = strtolower((string)$usuarioActual['rol']) === 'administrador';
+}
+
+if (!$esAdmin) {
+    echo json_encode(['estado' => 'error', 'mensaje' => 'No tiene permisos suficientes.']);
+    exit;
+}
+
 $modeloPermiso = new ModeloPermiso();
-// Usamos $_REQUEST para ser flexibles con GET o POST
 $accion = isset($_REQUEST['accion']) ? $_REQUEST['accion'] : '';
 $respuesta = ['estado' => 'error', 'mensaje' => 'Acción no válida o no proporcionada.'];
 

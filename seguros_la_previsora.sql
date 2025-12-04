@@ -95,7 +95,8 @@ INSERT INTO `agente_permiso` (`cedula_agente`, `id_permiso`, `tiene_permiso`) VA
 ('V12345678', 15, 1),
 ('V12345678', 16, 1),
 ('V12345678', 17, 1),
-('V12345678', 18, 1);
+('V12345678', 18, 1),
+('V12345678', 19, 0);
 
 -- --------------------------------------------------------
 
@@ -242,7 +243,8 @@ INSERT INTO `permiso` (`id_permiso`, `nombre_permiso`, `descripcion`) VALUES
 (15, 'reportes_generar_clientes', 'Permite generar reportes de clientes.'),
 (16, 'poliza_categoria_personas', 'Autoriza al agente a emitir pólizas de la categoría Personas.'),
 (17, 'poliza_categoria_automovil', 'Autoriza al agente a emitir pólizas de la categoría Automóvil.'),
-(18, 'poliza_categoria_patrimoniales', 'Autoriza al agente a emitir pólizas de la categoría Patrimoniales.');
+(18, 'poliza_categoria_patrimoniales', 'Autoriza al agente a emitir pólizas de la categoría Patrimoniales.'),
+(19, 'solicitud_gestionar', 'Permite al agente revisar y actualizar las solicitudes asignadas.');
 
 -- --------------------------------------------------------
 
@@ -449,6 +451,65 @@ INSERT INTO `tipo_poliza_cobertura` (`id_tipo_poliza`, `id_cobertura`) VALUES
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `solicitud_poliza`
+--
+
+CREATE TABLE `solicitud_poliza` (
+  `id_solicitud` int(10) UNSIGNED NOT NULL,
+  `id_cliente` int(10) UNSIGNED NOT NULL,
+  `cedula_cliente` varchar(20) NOT NULL,
+  `id_categoria` int(10) UNSIGNED NOT NULL,
+  `id_tipo_poliza` int(10) UNSIGNED NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `contacto_preferido` varchar(255) DEFAULT NULL,
+  `estado` enum('EN_REVISION','CONTACTADO','EN_PROCESO','APROBADO','RECHAZADO','CANCELADO') NOT NULL DEFAULT 'EN_REVISION',
+  `cedula_agente_asignado` varchar(20) DEFAULT NULL,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_actualizacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `nota_interna` text DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `solicitud_poliza`
+--
+
+INSERT INTO `solicitud_poliza` (`id_solicitud`, `id_cliente`, `cedula_cliente`, `id_categoria`, `id_tipo_poliza`, `descripcion`, `contacto_preferido`, `estado`, `cedula_agente_asignado`, `fecha_creacion`, `fecha_actualizacion`, `nota_interna`) VALUES
+(1, 1, 'V20000001', 1, 1, 'Cobertura complementaria para viajes frecuentes.', 'juan.perez@example.com', 'EN_REVISION', 'V12345678', '2025-11-20 14:30:00', '2025-11-20 14:30:00', NULL),
+(2, 2, 'V20000002', 3, 6, 'Actualizar póliza de comercio con cobertura robo.', '0414-7654321', 'CONTACTADO', 'V12345678', '2025-11-25 09:10:00', '2025-11-26 10:05:00', 'Cliente contactado, espera cotización.');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `solicitud_siniestro`
+--
+
+CREATE TABLE `solicitud_siniestro` (
+  `id_solicitud` int(10) UNSIGNED NOT NULL,
+  `id_poliza` int(10) UNSIGNED NOT NULL,
+  `cedula_cliente` varchar(20) NOT NULL,
+  `tipo_incidente` varchar(150) NOT NULL,
+  `descripcion` text DEFAULT NULL,
+  `fecha_incidente` date NOT NULL,
+  `lugar_incidente` varchar(255) DEFAULT NULL,
+  `estado` enum('EN_REVISION','CITA_PENDIENTE','EN_GESTION','ESCALADO','CERRADO','CANCELADO') NOT NULL DEFAULT 'EN_REVISION',
+  `cedula_agente_asignado` varchar(20) DEFAULT NULL,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_actualizacion` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `nota_interna` text DEFAULT NULL,
+  `fecha_cita` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Volcado de datos para la tabla `solicitud_siniestro`
+--
+
+INSERT INTO `solicitud_siniestro` (`id_solicitud`, `id_poliza`, `cedula_cliente`, `tipo_incidente`, `descripcion`, `fecha_incidente`, `lugar_incidente`, `estado`, `cedula_agente_asignado`, `fecha_creacion`, `fecha_actualizacion`, `nota_interna`, `fecha_cita`) VALUES
+(1, 100, 'V20000001', 'Choque frontal leve', 'Cliente solicita evaluación de daños en parachoques.', '2025-11-18', 'Caracas - Av. Libertador', 'CITA_PENDIENTE', 'V12345678', '2025-11-19 15:45:00', '2025-11-19 15:45:00', 'Coordinar perito para el 22/11.', '2025-11-22 10:30:00'),
+(2, 105, 'V20000002', 'Daño por agua', 'Inundación parcial del local comercial tras lluvia.', '2025-11-22', 'Valencia - Av. Bolívar', 'EN_GESTION', 'V12345678', '2025-11-23 08:15:00', '2025-11-26 11:20:00', NULL, NULL);
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `usuario`
 --
 
@@ -592,6 +653,24 @@ ALTER TABLE `tipo_poliza_cobertura`
   ADD KEY `fk_tpc_cobertura` (`id_cobertura`);
 
 --
+-- Indices de la tabla `solicitud_poliza`
+--
+ALTER TABLE `solicitud_poliza`
+  ADD PRIMARY KEY (`id_solicitud`),
+  ADD KEY `fk_solicitud_poliza_cliente` (`id_cliente`),
+  ADD KEY `fk_solicitud_poliza_categoria` (`id_categoria`),
+  ADD KEY `fk_solicitud_poliza_tipo` (`id_tipo_poliza`),
+  ADD KEY `fk_solicitud_poliza_agente` (`cedula_agente_asignado`);
+
+--
+-- Indices de la tabla `solicitud_siniestro`
+--
+ALTER TABLE `solicitud_siniestro`
+  ADD PRIMARY KEY (`id_solicitud`),
+  ADD KEY `fk_solicitud_siniestro_poliza` (`id_poliza`),
+  ADD KEY `fk_solicitud_siniestro_agente` (`cedula_agente_asignado`);
+
+--
 -- Indices de la tabla `usuario`
 --
 ALTER TABLE `usuario`
@@ -662,6 +741,18 @@ ALTER TABLE `siniestro`
 --
 ALTER TABLE `tipo_poliza`
   MODIFY `id_tipo_poliza` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
+
+--
+-- AUTO_INCREMENT de la tabla `solicitud_poliza`
+--
+ALTER TABLE `solicitud_poliza`
+  MODIFY `id_solicitud` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
+-- AUTO_INCREMENT de la tabla `solicitud_siniestro`
+--
+ALTER TABLE `solicitud_siniestro`
+  MODIFY `id_solicitud` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- Restricciones para tablas volcadas
@@ -744,6 +835,22 @@ ALTER TABLE `tipo_poliza`
 ALTER TABLE `tipo_poliza_cobertura`
   ADD CONSTRAINT `fk_tpc_cobertura` FOREIGN KEY (`id_cobertura`) REFERENCES `cobertura` (`id_cobertura`) ON DELETE CASCADE,
   ADD CONSTRAINT `fk_tpc_tipo` FOREIGN KEY (`id_tipo_poliza`) REFERENCES `tipo_poliza` (`id_tipo_poliza`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `solicitud_poliza`
+--
+ALTER TABLE `solicitud_poliza`
+  ADD CONSTRAINT `fk_solicitud_poliza_agente` FOREIGN KEY (`cedula_agente_asignado`) REFERENCES `usuario` (`cedula`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_solicitud_poliza_categoria` FOREIGN KEY (`id_categoria`) REFERENCES `categoria_poliza` (`id_categoria`),
+  ADD CONSTRAINT `fk_solicitud_poliza_cliente` FOREIGN KEY (`id_cliente`) REFERENCES `cliente` (`id_cliente`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_solicitud_poliza_tipo` FOREIGN KEY (`id_tipo_poliza`) REFERENCES `tipo_poliza` (`id_tipo_poliza`);
+
+--
+-- Filtros para la tabla `solicitud_siniestro`
+--
+ALTER TABLE `solicitud_siniestro`
+  ADD CONSTRAINT `fk_solicitud_siniestro_agente` FOREIGN KEY (`cedula_agente_asignado`) REFERENCES `usuario` (`cedula`) ON DELETE SET NULL,
+  ADD CONSTRAINT `fk_solicitud_siniestro_poliza` FOREIGN KEY (`id_poliza`) REFERENCES `poliza` (`id_poliza`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `usuario`

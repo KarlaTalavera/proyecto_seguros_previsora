@@ -2,6 +2,10 @@
 // Controlador procedural estilo API para acciones sobre usuario (crear, listar, login minimal)
 require_once dirname(__DIR__) . '/modelo/modeloUsuario.php';
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 // Devolver JSON
 header('Content-Type: application/json');
 
@@ -11,13 +15,39 @@ $respuesta = ['success' => false, 'message' => 'Acción no válida.'];
 
 switch ($accion) {
     case 'crear_usuario':
-        // Esperamos POST
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $respuesta = ['success' => false, 'message' => 'Método no permitido.'];
+            break;
+        }
+
+        if (!isset($_SESSION['datos_usuario']) || $_SESSION['datos_usuario']->getNombreRol() !== 'administrador') {
+            $respuesta = ['success' => false, 'message' => 'No autorizado.'];
+            break;
+        }
+
+        $rolSolicitado = strtolower(trim($_POST['rol'] ?? 'agente'));
+        $rolesPermitidos = [
+            'agente' => ['id' => 2, 'nombre' => 'agente'],
+            'cliente' => ['id' => 3, 'nombre' => 'cliente'],
+            'asegurado' => ['id' => 3, 'nombre' => 'asegurado']
+        ];
+
+        if (!isset($rolesPermitidos[$rolSolicitado])) {
+            $respuesta = ['success' => false, 'message' => 'Rol no permitido para esta operación.'];
+            break;
+        }
+
         $cedula = trim($_POST['cedula'] ?? '');
         $nombre = trim($_POST['nombre'] ?? '');
         $apellido = trim($_POST['apellido'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $telefono = trim($_POST['telefono'] ?? '');
-        $password = $_POST['password'] ?? null; // opcional
+        $password = $_POST['password'] ?? null;
+        $direccion = trim($_POST['direccion'] ?? '') ?: null;
+        $fechaNacimiento = trim($_POST['fecha_nacimiento'] ?? '') ?: null;
+
+        $rolDestino = $rolesPermitidos[$rolSolicitado];
+        $rolNombre = $rolDestino['nombre'];
 
         $data = [
             'cedula' => $cedula,
@@ -26,7 +56,10 @@ switch ($accion) {
             'email' => $email,
             'telefono' => $telefono,
             'password' => $password,
-            'id_rol' => 2 // agente por defecto
+            'id_rol' => $rolDestino['id'],
+            'rol_nombre' => $rolNombre,
+            'direccion' => $direccion,
+            'fecha_nacimiento' => $fechaNacimiento
         ];
 
         $result = $modelo->crearUsuario($data);
@@ -46,67 +79,83 @@ switch ($accion) {
             $respuesta = ['success' => false, 'message' => 'Error al obtener usuarios'];
         }
         break;
-
     case 'actualizar_usuario':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $respuesta['message'] = 'Método no permitido';
+            $respuesta = ['success' => false, 'message' => 'Método no permitido.'];
             break;
         }
 
-        $cedula_original = trim($_POST['cedula_original'] ?? '');
-        $cedula = trim($_POST['cedula'] ?? '');
+        if (!isset($_SESSION['datos_usuario']) || $_SESSION['datos_usuario']->getNombreRol() !== 'administrador') {
+            $respuesta = ['success' => false, 'message' => 'No autorizado.'];
+            break;
+        }
+
+        $cedulaOriginal = trim($_POST['cedula_original'] ?? '');
+        if ($cedulaOriginal === '') {
+            $respuesta = ['success' => false, 'message' => 'Cédula original obligatoria.'];
+            break;
+        }
+
+        $infoUsuario = $modelo->obtenerUsuarioPorCedula($cedulaOriginal);
+        if (!$infoUsuario) {
+            $respuesta = ['success' => false, 'message' => 'Usuario no encontrado.'];
+            break;
+        }
+
+        $cedula = trim($_POST['cedula'] ?? $cedulaOriginal);
         $nombre = trim($_POST['nombre'] ?? '');
         $apellido = trim($_POST['apellido'] ?? '');
         $email = trim($_POST['email'] ?? '');
         $telefono = trim($_POST['telefono'] ?? '');
-        $password = $_POST['password'] ?? null;
+        $passwordNueva = $_POST['password'] ?? '';
 
-        // Validaciones básicas
-        if (empty($cedula) || empty($nombre) || empty($apellido) || empty($email)) {
-            $respuesta = ['success' => false, 'message' => 'Todos los campos obligatorios son requeridos.'];
+        if ($nombre === '' || $apellido === '' || $email === '') {
+            $respuesta = ['success' => false, 'message' => 'Nombre, apellido y correo son obligatorios.'];
             break;
         }
 
-        // Si la cédula cambió, validar formato
-        if ($cedula !== $cedula_original && !$modelo->validarFormatoCedula($cedula)) {
+        if ($cedula !== $cedulaOriginal && !$modelo->validarFormatoCedula($cedula)) {
             $respuesta = ['success' => false, 'message' => 'Formato de cédula inválido.'];
             break;
         }
 
-        // Si el email cambió, verificar que no exista
-        if ($email !== $modelo->obtenerUsuarioPorCedula($cedula_original)['email']) {
-            if ($modelo->existeEmail($email)) {
-                $respuesta = ['success' => false, 'message' => 'El correo electrónico ya está registrado.'];
-                break;
-            }
+        $datosAdmin = [
+            'cedula' => $cedula,
+            'cedula_original' => $cedulaOriginal,
+            'nombre' => $nombre,
+            'apellido' => $apellido,
+            'email' => $email,
+            'telefono' => $telefono,
+            'password_nueva' => $passwordNueva,
+            'rol_nombre' => $infoUsuario['rol'] ?? '',
+            'foto_actual' => $infoUsuario['foto_perfil'] ?? 'undraw_profile.svg'
+        ];
+
+        if (($infoUsuario['rol'] ?? '') !== 'administrador') {
+            $datosAdmin['cedula'] = $cedulaOriginal;
         }
 
-        $result = $modelo->actualizarUsuario($cedula_original, $cedula, $nombre, $apellido, $email, $telefono, $password);
-        $respuesta = $result;
+        $respuesta = $modelo->actualizarPerfil($datosAdmin);
         break;
 
     case 'eliminar_usuario':
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $respuesta['message'] = 'Método no permitido';
+            $respuesta = ['success' => false, 'message' => 'Método no permitido.'];
+            break;
+        }
+
+        if (!isset($_SESSION['datos_usuario']) || $_SESSION['datos_usuario']->getNombreRol() !== 'administrador') {
+            $respuesta = ['success' => false, 'message' => 'No autorizado.'];
             break;
         }
 
         $cedula = trim($_POST['cedula'] ?? '');
-        
-        if (empty($cedula)) {
-            $respuesta = ['success' => false, 'message' => 'Cédula requerida.'];
+        if ($cedula === '') {
+            $respuesta = ['success' => false, 'message' => 'Cédula no proporcionada.'];
             break;
         }
 
-        // Verificar que el usuario existe y es un agente
-        $usuario = $modelo->obtenerUsuarioPorCedula($cedula);
-        if (!$usuario || strtolower($usuario['rol']) !== 'agente') {
-            $respuesta = ['success' => false, 'message' => 'No se puede eliminar: usuario no encontrado o no es un agente.'];
-            break;
-        }
-
-        $result = $modelo->eliminarUsuario($cedula);
-        $respuesta = $result;
+        $respuesta = $modelo->desactivarUsuario($cedula);
         break;
 
     case 'actualizar_perfil':
@@ -115,40 +164,65 @@ switch ($accion) {
             break;
         }
 
-        // Recibir datos
         $datos = [
-            'cedula' => $_POST['cedula'] ?? '',
+            'cedula' => $_POST['cedula'] ?? ($_POST['cedula_original'] ?? ''),
+            'cedula_original' => $_POST['cedula_original'] ?? '',
             'nombre' => $_POST['nombre'] ?? '',
             'apellido' => $_POST['apellido'] ?? '',
             'email' => $_POST['email'] ?? '',
             'telefono' => $_POST['telefono'] ?? '',
-            'password_nueva' => $_POST['password'] ?? '', // Puede estar vacío
-            'rol_nombre' => $_POST['rol_actual'] ?? '' // Importante enviar esto desde el form
+            'password_nueva' => $_POST['password'] ?? '',
+            'rol_nombre' => $_POST['rol_actual'] ?? '',
+            'foto_actual' => $_POST['foto_actual'] ?? ''
         ];
 
-        // Verificar sesión por seguridad (que quien edita sea el dueño)
-        if (!isset($_SESSION['datos_usuario']) || $_SESSION['datos_usuario']->getCedula() !== $datos['cedula']) {
+        if (!isset($_SESSION['datos_usuario']) || $_SESSION['datos_usuario']->getCedula() !== $datos['cedula_original']) {
             $respuesta = ['success' => false, 'message' => 'Error de seguridad: No puede editar este perfil.'];
             break;
         }
 
-        // Manejo del archivo (foto)
         $foto = $_FILES['foto_perfil'] ?? null;
 
         $resultado = $modelo->actualizarPerfil($datos, $foto);
-        
+
         if ($resultado['success']) {
-            // Actualizar la sesión con los nuevos datos para que se refleje de inmediato
-            // (Esto es un truco rápido, lo ideal sería recargar el objeto usuario completo)
+            $_SESSION['datos_usuario']->setCedula($resultado['cedula']);
             $_SESSION['datos_usuario']->setNombre($datos['nombre']);
             $_SESSION['datos_usuario']->setApellido($datos['apellido']);
             $_SESSION['datos_usuario']->setEmail($datos['email']);
             $_SESSION['datos_usuario']->setTelefono($datos['telefono']);
+            if (!empty($resultado['foto'])) {
+                $_SESSION['datos_usuario']->setFotoPerfil($resultado['foto']);
+            }
         }
 
         $respuesta = $resultado;
         break;
 
+    case 'desactivar_usuario':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $respuesta = ['success' => false, 'message' => 'Método no permitido.'];
+            break;
+        }
+
+        if (!isset($_SESSION['datos_usuario']) || $_SESSION['datos_usuario']->getNombreRol() !== 'administrador') {
+            $respuesta = ['success' => false, 'message' => 'No autorizado.'];
+            break;
+        }
+
+        $cedula = trim($_POST['cedula'] ?? '');
+        if ($cedula === '') {
+            $respuesta = ['success' => false, 'message' => 'Cédula no proporcionada.'];
+            break;
+        }
+
+        if (strtoupper($cedula) === strtoupper($_SESSION['datos_usuario']->getCedula())) {
+            $respuesta = ['success' => false, 'message' => 'No puede desactivar su propio usuario.'];
+            break;
+        }
+
+        $respuesta = $modelo->desactivarUsuario($cedula);
+        break;
     default:
         $respuesta = ['success' => false, 'message' => 'Acción no reconocida.'];
         break;

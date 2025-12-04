@@ -1,12 +1,14 @@
 <?php
 require_once dirname(__DIR__) . '/modelo/modeloReporte.php';
 require_once dirname(__DIR__) . '/modelo/modeloUsuario.php';
+require_once dirname(__DIR__) . '/servicios/ReporteDashboardExporter.php';
 
 header('Content-Type: application/json');
 if (session_status() == PHP_SESSION_NONE) session_start();
 
 $accion = $_REQUEST['accion'] ?? '';
 $modelo = new ModeloReporte();
+$exporter = new ReporteDashboardExporter();
 $usuario = $_SESSION['datos_usuario'] ?? null; // instancia de modeloUsuario si autenticado
 $rol = $usuario ? $usuario->getNombreRol() : null;
 $permisosSesion = [];
@@ -67,12 +69,14 @@ $permisoPorAccion = [
     'kpis' => 'reportes_generar_polizas',
     'kpis_agente' => 'reportes_generar_polizas',
     'r_tipo_cliente' => 'reportes_generar_clientes',
-    'r_siniestros' => 'reportes_generar_siniestros'
+    'r_siniestros' => 'reportes_generar_siniestros',
+    'exportar_dashboard' => 'reportes_generar_polizas',
+    'exportar_grafico' => 'reportes_generar_polizas'
 ];
 
 $permisoRequerido = $permisoPorAccion[$accion] ?? null;
 if ($rol === 'agente') {
-    $accionesPropias = ['r1', 'r4', 'r8', 'r_ramo', 'r_agente_ventas', 'kpis', 'kpis_agente', 'r_tipo_cliente', 'r_siniestros'];
+    $accionesPropias = ['r1', 'r4', 'r8', 'r_ramo', 'r_agente_ventas', 'kpis', 'kpis_agente', 'r_tipo_cliente', 'r_siniestros', 'exportar_grafico'];
     if (in_array($accion, $accionesPropias, true)) {
         $permisoRequerido = null;
     }
@@ -127,7 +131,16 @@ switch ($accion) {
             $ced = $_GET['cedula_agente'];
         }
         $data = $modelo->rankingProductividad($months, $ced, $limit);
-        $response = ['success' => true, 'data' => $data];
+        if ($data === false) {
+            $message = 'Error al obtener ranking de productividad.';
+            if (isset($_GET['debug']) && method_exists($modelo, 'getLastError')) {
+                $response = ['success' => false, 'message' => $message, 'error' => $modelo->getLastError()];
+            } else {
+                $response = ['success' => false, 'message' => $message];
+            }
+        } else {
+            $response = ['success' => true, 'data' => $data];
+        }
         break;
 
     case 'r_ramo': // pólizas por ramo (categoría)
@@ -204,6 +217,123 @@ switch ($accion) {
         $data = $modelo->kpisResumen($ced);
         if ($data !== false) $response = ['success' => true, 'data' => $data];
         else $response = ['success' => false, 'message' => 'Error al obtener KPIs.'];
+        break;
+
+    case 'exportar_dashboard':
+        $formato = strtolower((string)($_GET['formato'] ?? $_POST['formato'] ?? 'pdf'));
+        if (!in_array($formato, ['pdf', 'xlsx'], true)) {
+            $response = ['success' => false, 'message' => 'Formato de exportación no soportado.'];
+            break;
+        }
+
+        $ced = null;
+        $esAdmin = controladorReporte_esAdmin($usuario);
+        if (!$esAdmin && controladorReporte_esAgente($usuario)) {
+            $ced = $usuario->getCedula();
+        } elseif (isset($_GET['cedula_agente'])) {
+            $ced = $_GET['cedula_agente'];
+        }
+
+        $datosDashboard = $exporter->obtenerDatosDashboard($ced, $esAdmin);
+        $nombre = '';
+        if ($usuario && method_exists($usuario, 'getNombre')) {
+            $nombre = trim((string)$usuario->getNombre() . ' ' . (string)$usuario->getApellido());
+        }
+        if ($nombre === '' && isset($_SESSION['datos_usuario']) && is_array($_SESSION['datos_usuario'])) {
+            $datosArray = $_SESSION['datos_usuario'];
+            $nombre = trim(($datosArray['nombre'] ?? '') . ' ' . ($datosArray['apellido'] ?? ''));
+        }
+        if ($nombre === '') {
+            $nombre = 'Usuario';
+        }
+
+        $contexto = [
+            'titulo' => $esAdmin ? 'Dashboard gerencial' : 'Dashboard del agente',
+            'generado_por' => $nombre,
+            'fecha' => date('d/m/Y H:i')
+        ];
+        $timestamp = date('Ymd_His');
+
+        if ($formato === 'pdf') {
+            $contenido = $exporter->generarPdf($datosDashboard, $contexto);
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename="dashboard_' . $timestamp . '.pdf"');
+            echo $contenido;
+            exit;
+        }
+
+        if ($formato === 'xlsx') {
+            $contenido = $exporter->generarExcel($datosDashboard, $contexto);
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment; filename="dashboard_' . $timestamp . '.xlsx"');
+            header('Content-Length: ' . strlen($contenido));
+            echo $contenido;
+            exit;
+        }
+        break;
+
+    case 'exportar_grafico':
+        $grafico = strtolower(trim((string)($_GET['grafico'] ?? $_POST['grafico'] ?? '')));
+        $formato = strtolower((string)($_GET['formato'] ?? $_POST['formato'] ?? 'pdf'));
+        $graficasPermitidas = ['ramo', 'estado', 'ranking', 'siniestros'];
+
+        if (!in_array($grafico, $graficasPermitidas, true)) {
+            $response = ['success' => false, 'message' => 'Gráfica no soportada.'];
+            break;
+        }
+        if (!in_array($formato, ['pdf', 'xlsx'], true)) {
+            $response = ['success' => false, 'message' => 'Formato de exportación no soportado.'];
+            break;
+        }
+
+        $ced = null;
+        $esAdmin = controladorReporte_esAdmin($usuario);
+        if (!$esAdmin && controladorReporte_esAgente($usuario)) {
+            $ced = $usuario->getCedula();
+        } elseif (isset($_GET['cedula_agente'])) {
+            $ced = $_GET['cedula_agente'];
+        }
+
+        $datosDashboard = $exporter->obtenerDatosDashboard($ced, $esAdmin);
+
+        $nombre = '';
+        if ($usuario && method_exists($usuario, 'getNombre')) {
+            $nombre = trim((string)$usuario->getNombre() . ' ' . (string)$usuario->getApellido());
+        }
+        if ($nombre === '' && isset($_SESSION['datos_usuario']) && is_array($_SESSION['datos_usuario'])) {
+            $datosArray = $_SESSION['datos_usuario'];
+            $nombre = trim(($datosArray['nombre'] ?? '') . ' ' . ($datosArray['apellido'] ?? ''));
+        }
+        if ($nombre === '') {
+            $nombre = 'Usuario';
+        }
+
+        $contexto = [
+            'generado_por' => $nombre,
+            'fecha' => date('d/m/Y H:i'),
+        ];
+        $timestamp = date('Ymd_His');
+
+        try {
+            if ($formato === 'pdf') {
+                $contenido = $exporter->generarPdfGrafico($grafico, $datosDashboard, $contexto);
+                header('Content-Type: application/pdf');
+                header('Content-Disposition: attachment; filename="grafico_' . $grafico . '_' . $timestamp . '.pdf"');
+                echo $contenido;
+                exit;
+            }
+
+            if ($formato === 'xlsx') {
+                $contenido = $exporter->generarExcelGrafico($grafico, $datosDashboard, $contexto);
+                header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+                header('Content-Disposition: attachment; filename="grafico_' . $grafico . '_' . $timestamp . '.xlsx"');
+                header('Content-Length: ' . strlen($contenido));
+                echo $contenido;
+                exit;
+            }
+        } catch (InvalidArgumentException $e) {
+            $response = ['success' => false, 'message' => $e->getMessage()];
+        }
         break;
 
     default:

@@ -14,7 +14,7 @@
     <!-- Custom fonts for this template-->
     <link href="../vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
     <link
-        href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i"
+        href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
         rel="stylesheet">
 
     <!-- Custom styles for this template-->
@@ -22,6 +22,22 @@
 
     <!-- Custom override: sidebar color -->
      <style>
+        :root {
+            --font-family-sans-serif: 'Plus Jakarta Sans', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+        }
+        body {
+            font-family: var(--font-family-sans-serif);
+            line-height: 1.55;
+        }
+        h1,
+        h2,
+        h3,
+        h4,
+        h5,
+        h6 {
+            font-family: var(--font-family-sans-serif);
+            font-weight: 600;
+        }
         /* Forzar color del sidebar a #2c657fff */
         #accordionSidebar {
             background-color: #1d4855ff !important;

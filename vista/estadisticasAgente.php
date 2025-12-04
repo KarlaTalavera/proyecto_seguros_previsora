@@ -7,7 +7,7 @@ require_once __DIR__ . '/parte_superior.php';
 ?>
 
 <div class="container-fluid">
-  <div class="d-flex justify-content-between align-items-center mb-4">
+  <div class="mb-4">
     <h3 class="mb-0">Mi Rendimiento</h3>
     <small class="text-muted">Última actualización: <?php echo date('Y-m-d'); ?></small>
   </div>
