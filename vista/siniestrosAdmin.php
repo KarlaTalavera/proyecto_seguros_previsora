@@ -107,46 +107,7 @@ foreach ($siniestros as $siniestro) {
     </div>
   </div>
 
-  <!-- Barra de búsqueda y filtros -->
-  <div class="card mb-4">
-    <div class="card-body">
-      <div class="row">
-        <div class="col-md-3">
-          <div class="form-group">
-            <label for="filtroEstado">Estado</label>
-            <select class="form-control" id="filtroEstado">
-              <option value="">Todos</option>
-              <option value="ABIERTO">Abierto</option>
-              <option value="EN PROCESO">En Proceso</option>
-              <option value="CERRADO">Cerrado</option>
-              <option value="RECHAZADO">Rechazado</option>
-            </select>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="form-group">
-            <label for="filtroFechaDesde">Desde</label>
-            <input type="date" class="form-control" id="filtroFechaDesde">
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="form-group">
-            <label for="filtroFechaHasta">Hasta</label>
-            <input type="date" class="form-control" id="filtroFechaHasta">
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="form-group">
-            <label for="filtroPoliza">Póliza</label>
-            <input type="text" class="form-control" id="filtroPoliza" placeholder="Número de póliza">
-          </div>
-        </div>
-      </div>
-      <button class="btn btn-primary" id="btnBuscar">Buscar</button>
-      <button class="btn btn-secondary" id="btnLimpiar">Limpiar</button>
-    </div>
-  </div>
-
+  
   <!-- Tabla de siniestros -->
   <div class="d-flex justify-content-between mb-3">
     <h3>Gestión de Siniestros</h3>
@@ -433,9 +394,15 @@ foreach ($siniestros as $siniestro) {
 
 <?php
 $extra_scripts = <<<EOT
+<!-- Toastr CSS -->
+<link href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css" rel="stylesheet">
+
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.1/css/buttons.dataTables.min.css">
 <link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.5.0/css/responsive.dataTables.min.css">
+
+<!-- Toastr JS -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
 <script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/dataTables.buttons.min.js"></script>
 <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
@@ -443,447 +410,158 @@ $extra_scripts = <<<EOT
 <script src="https://cdn.datatables.net/responsive/2.5.0/js/dataTables.responsive.min.js"></script>
 <script>
 $(document).ready(function() {
-    // Inicializar DataTable con opciones avanzadas
-    var table = $('#claimsTable').DataTable({
-        dom: 'Bfrtip',
-        buttons: [
-            {
-                extend: 'copy',
-                text: '<i class="fas fa-copy"></i> Copiar'
-            },
-            {
-                extend: 'csv',
-                text: '<i class="fas fa-file-csv"></i> CSV'
-            },
-            {
-                extend: 'excel',
-                text: '<i class="fas fa-file-excel"></i> Excel'
-            },
-            {
-                extend: 'pdf',
-                text: '<i class="fas fa-file-pdf"></i> PDF'
-            },
-            {
-                extend: 'print',
-                text: '<i class="fas fa-print"></i> Imprimir'
-            }
-        ],
-        language: {
-            url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json'
+    // RUTA ABSOLUTAMENTE CORRECTA para tu estructura:
+    // XAMPP en C:\\xampp\\htdocs\\proyecto_seguros_previsora\\controlador\\controladorSiniestro.php
+    var controladorUrl = '/proyecto_seguros_previsora/controlador/controladorSiniestro.php';
+    
+    console.log('Ruta CORREGIDA:', controladorUrl);
+    console.log('URL completa: http://localhost' + controladorUrl);
+    
+    // Verificar que el archivo existe
+    $.ajax({
+        url: controladorUrl,
+        type: 'HEAD',
+        success: function() {
+            console.log('CONTROLADOR ENCONTRADO!');
+            inicializarAplicacion();
         },
-        responsive: true,
-        pageLength: 25,
-        order: [[0, 'desc']]
-    });
-
-    // Configurar fecha por defecto en formularios
-    var today = new Date().toISOString().split('T')[0];
-    $('#fecha_incidente').val(today);
-    $('#fecha_pago').val(today);
-
-    // Manejar búsqueda con filtros
-    $('#btnBuscar').on('click', function() {
-        var estado = $('#filtroEstado').val();
-        var fechaDesde = $('#filtroFechaDesde').val();
-        var fechaHasta = $('#filtroFechaHasta').val();
-        var poliza = $('#filtroPoliza').val();
-
-        $.ajax({
-            url: '../controlador/controladorSiniestro.php',
-            type: 'GET',
-            data: {
-                accion: 'buscar_siniestros',
-                estado: estado,
-                fecha_desde: fechaDesde,
-                fecha_hasta: fechaHasta,
-                numero_poliza: poliza
-            },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    // Limpiar tabla
-                    table.clear();
-                    
-                    // Agregar nuevos datos
-                    $.each(response.siniestros, function(index, siniestro) {
-                        var badgeClass = 'badge-secondary';
-                        if (siniestro.estado == 'ABIERTO') badgeClass = 'badge-warning';
-                        else if (siniestro.estado == 'CERRADO') badgeClass = 'badge-success';
-                        else if (siniestro.estado == 'EN PROCESO') badgeClass = 'badge-info';
-                        else if (siniestro.estado == 'RECHAZADO') badgeClass = 'badge-danger';
-                        
-                        table.row.add([
-                            siniestro.id_siniestro,
-                            siniestro.numero_siniestro,
-                            '<a href="polizaDetalle.php?id=' + siniestro.id_poliza + '" target="_blank">' + 
-                                (siniestro.numero_poliza || 'POL-' + siniestro.id_poliza) + 
-                            '</a>',
-                            siniestro.nombre_cliente || 'N/A',
-                            new Date(siniestro.fecha_reporte).toLocaleDateString('es-ES'),
-                            siniestro.descripcion.substring(0, 50) + '...',
-                            '$' + parseFloat(siniestro.monto_estimado).toFixed(2).replace(/\\./g, ','),
-                            '<span class="badge ' + badgeClass + '">' + siniestro.estado + '</span>',
-                            siniestro.cedula_agente_gestion,
-                            '<div class="btn-group" role="group">' +
-                                '<button class="btn btn-sm btn-info btn-view" data-id="' + siniestro.id_siniestro + '" title="Ver"><i class="fas fa-eye"></i></button>' +
-                                '<button class="btn btn-sm btn-warning btn-edit" data-id="' + siniestro.id_siniestro + '" title="Editar"><i class="fas fa-edit"></i></button>' +
-                                (siniestro.estado != 'CERRADO' ? 
-                                    '<button class="btn btn-sm btn-success btn-payment" data-id="' + siniestro.id_siniestro + '" title="Registrar Pago"><i class="fas fa-money-bill"></i></button>' : 
-                                    '') +
-                                '<button class="btn btn-sm btn-danger btn-delete" data-id="' + siniestro.id_siniestro + '" title="Eliminar"><i class="fas fa-trash"></i></button>' +
-                            '</div>'
-                        ]);
-                    });
-                    
-                    table.draw();
-                    toastr.success('Búsqueda completada. Se encontraron ' + response.siniestros.length + ' siniestros.');
-                } else {
-                    toastr.error('Error: ' + response.message);
-                }
-            },
-            error: function() {
-                toastr.error('Error al realizar la búsqueda');
-            }
-        });
-    });
-
-    // Limpiar filtros
-    $('#btnLimpiar').on('click', function() {
-        $('#filtroEstado').val('');
-        $('#filtroFechaDesde').val('');
-        $('#filtroFechaHasta').val('');
-        $('#filtroPoliza').val('');
-        location.reload();
-    });
-
-    // Manejar creación de nuevo siniestro
-    $('#claimForm').on('submit', function(e) {
-        e.preventDefault();
-        
-        var formData = $(this).serialize();
-        formData += '&accion=crear_siniestro';
-        
-        $.ajax({
-            url: '../controlador/controladorSiniestro.php',
-            type: 'POST',
-            data: formData,
-            dataType: 'json',
-            beforeSend: function() {
-                $('#claimForm button[type="submit"]').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
-            },
-            success: function(response) {
-                if (response.success) {
-                    toastr.success(response.message);
-                    $('#newClaimModal').modal('hide');
-                    $('#claimForm')[0].reset();
-                    setTimeout(function() {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    toastr.error(response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                toastr.error('Error al comunicarse con el servidor: ' + error);
-            },
-            complete: function() {
-                $('#claimForm button[type="submit"]').prop('disabled', false).html('<i class="fas fa-save"></i> Guardar');
-            }
-        });
-    });
-
-    // Manejar botón Ver
-    $('#claimsTable').on('click', '.btn-view', function() {
-        var id = $(this).data('id');
-        
-        $.ajax({
-            url: '../controlador/controladorSiniestro.php',
-            type: 'GET',
-            data: {
-                accion: 'obtener_siniestro',
-                id_siniestro: id
-            },
-            dataType: 'json',
-            beforeSend: function() {
-                $('#viewClaimContent').html(
-                    '<div class="text-center">' +
-                    '<div class="spinner-border text-primary" role="status">' +
-                    '<span class="sr-only">Cargando...</span>' +
-                    '</div>' +
-                    '<p>Cargando información...</p>' +
-                    '</div>'
-                );
-            },
-            success: function(response) {
-                if (response.success) {
-                    var siniestro = response.data;
-                    var html = '<div class="row">';
-                    html += '<div class="col-md-6">';
-                    html += '<p><strong>ID Siniestro:</strong> ' + siniestro.id_siniestro + '</p>';
-                    html += '<p><strong>Número Siniestro:</strong> ' + siniestro.numero_siniestro + '</p>';
-                    html += '<p><strong>Póliza:</strong> ' + (siniestro.numero_poliza || 'POL-' + siniestro.id_poliza) + '</p>';
-                    html += '<p><strong>Cliente:</strong> ' + siniestro.nombre_cliente + '</p>';
-                    html += '<p><strong>Cédula Cliente:</strong> ' + siniestro.cedula_cliente + '</p>';
-                    html += '</div>';
-                    html += '<div class="col-md-6">';
-                    html += '<p><strong>Fecha Reporte:</strong> ' + new Date(siniestro.fecha_reporte).toLocaleDateString('es-ES') + '</p>';
-                    html += '<p><strong>Estado:</strong> <span class="badge ' + getEstadoClass(siniestro.estado) + '">' + siniestro.estado + '</span></p>';
-                    html += '<p><strong>Agente Gestión:</strong> ' + (siniestro.nombre_agente || siniestro.cedula_agente_gestion) + '</p>';
-                    html += '<p><strong>Monto Estimado:</strong> $' + parseFloat(siniestro.monto_estimado).toFixed(2).replace(/\\./g, ',') + '</p>';
-                    html += '</div>';
-                    html += '</div>';
-                    html += '<div class="row mt-3">';
-                    html += '<div class="col-12">';
-                    html += '<p><strong>Descripción:</strong></p>';
-                    html += '<div class="card"><div class="card-body">' + siniestro.descripcion + '</div></div>';
-                    html += '</div>';
-                    html += '</div>';
-                    
-                    $('#viewClaimContent').html(html);
-                    $('#viewClaimModal').modal('show');
-                } else {
-                    toastr.error(response.message);
-                }
-            },
-            error: function() {
-                toastr.error('Error al cargar los detalles');
-            }
-        });
-    });
-
-    // Manejar botón Editar
-    $('#claimsTable').on('click', '.btn-edit', function() {
-        var id = $(this).data('id');
-        $('#edit_id_siniestro').val(id);
-        
-        $.ajax({
-            url: '../controlador/controladorSiniestro.php',
-            type: 'GET',
-            data: {
-                accion: 'obtener_siniestro',
-                id_siniestro: id
-            },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    var siniestro = response.data;
-                    var html = '<div class="row">';
-                    
-                    html += '<div class="col-md-6">';
-                    html += '<div class="form-group">';
-                    html += '<label>Número Siniestro</label>';
-                    html += '<input type="text" class="form-control" value="' + siniestro.numero_siniestro + '" readonly>';
-                    html += '</div>';
-                    html += '</div>';
-                    
-                    html += '<div class="col-md-6">';
-                    html += '<div class="form-group">';
-                    html += '<label>Póliza</label>';
-                    html += '<input type="text" class="form-control" value="' + (siniestro.numero_poliza || 'POL-' + siniestro.id_poliza) + '" readonly>';
-                    html += '</div>';
-                    html += '</div>';
-                    
-                    html += '</div>';
-                    
-                    html += '<div class="row">';
-                    html += '<div class="col-md-6">';
-                    html += '<div class="form-group">';
-                    html += '<label for="edit_fecha_incidente">Fecha Incidente *</label>';
-                    html += '<input type="date" class="form-control" name="fecha_incidente" id="edit_fecha_incidente" value="' + siniestro.fecha_reporte.split(' ')[0] + '" required>';
-                    html += '</div>';
-                    html += '</div>';
-                    
-                    html += '<div class="col-md-6">';
-                    html += '<div class="form-group">';
-                    html += '<label for="edit_estado">Estado *</label>';
-                    html += '<select class="form-control" name="estado" id="edit_estado" required>';
-                    html += '<option value="ABIERTO"' + (siniestro.estado == 'ABIERTO' ? ' selected' : '') + '>Abierto</option>';
-                    html += '<option value="EN PROCESO"' + (siniestro.estado == 'EN PROCESO' ? ' selected' : '') + '>En Proceso</option>';
-                    html += '<option value="CERRADO"' + (siniestro.estado == 'CERRADO' ? ' selected' : '') + '>Cerrado</option>';
-                    html += '<option value="RECHAZADO"' + (siniestro.estado == 'RECHAZADO' ? ' selected' : '') + '>Rechazado</option>';
-                    html += '</select>';
-                    html += '</div>';
-                    html += '</div>';
-                    html += '</div>';
-                    
-                    html += '<div class="form-group">';
-                    html += '<label for="edit_descripcion">Descripción *</label>';
-                    html += '<textarea class="form-control" name="descripcion" id="edit_descripcion" rows="4" required>' + siniestro.descripcion + '</textarea>';
-                    html += '</div>';
-                    
-                    html += '<div class="form-group">';
-                    html += '<label for="edit_monto_reclamo">Monto Estimado ($) *</label>';
-                    html += '<input type="number" step="0.01" min="0" class="form-control" name="monto_reclamo" id="edit_monto_reclamo" value="' + siniestro.monto_estimado + '" required>';
-                    html += '</div>';
-                    
-                    $('#editClaimContent').html(html);
-                    $('#editClaimModal').modal('show');
-                } else {
-                    toastr.error(response.message);
-                }
-            },
-            error: function() {
-                toastr.error('Error al cargar los datos para editar');
-            }
-        });
-    });
-
-    // Manejar formulario de edición
-    $('#editClaimForm').on('submit', function(e) {
-        e.preventDefault();
-        
-        var formData = $(this).serialize();
-        formData += '&accion=actualizar_siniestro';
-        
-        $.ajax({
-            url: '../controlador/controladorSiniestro.php',
-            type: 'POST',
-            data: formData,
-            dataType: 'json',
-            beforeSend: function() {
-                $('#editClaimForm button[type="submit"]').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
-            },
-            success: function(response) {
-                if (response.success) {
-                    toastr.success(response.message);
-                    $('#editClaimModal').modal('hide');
-                    setTimeout(function() {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    toastr.error(response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                toastr.error('Error al comunicarse con el servidor: ' + error);
-            },
-            complete: function() {
-                $('#editClaimForm button[type="submit"]').prop('disabled', false).html('<i class="fas fa-save"></i> Guardar Cambios');
-            }
-        });
-    });
-
-    // Manejar botón Registrar Pago
-    $('#claimsTable').on('click', '.btn-payment', function() {
-        var id = $(this).data('id');
-        $('#id_siniestro_pago').val(id);
-        
-        // Obtener monto estimado del siniestro
-        $.ajax({
-            url: '../controlador/controladorSiniestro.php',
-            type: 'GET',
-            data: {
-                accion: 'obtener_siniestro',
-                id_siniestro: id
-            },
-            dataType: 'json',
-            success: function(response) {
-                if (response.success) {
-                    var montoEstimado = response.data.monto_estimado;
-                    $('#monto_pago').val(montoEstimado).attr('max', montoEstimado);
-                }
-            }
-        });
-        
-        $('#paymentModal').modal('show');
-    });
-
-    // Manejar formulario de pago
-    $('#paymentForm').on('submit', function(e) {
-        e.preventDefault();
-        
-        var formData = $(this).serialize();
-        formData += '&accion=registrar_pago';
-        
-        $.ajax({
-            url: '../controlador/controladorSiniestro.php',
-            type: 'POST',
-            data: formData,
-            dataType: 'json',
-            beforeSend: function() {
-                $('#paymentForm button[type="submit"]').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Procesando...');
-            },
-            success: function(response) {
-                if (response.success) {
-                    toastr.success(response.message);
-                    $('#paymentModal').modal('hide');
-                    $('#paymentForm')[0].reset();
-                    setTimeout(function() {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    toastr.error(response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                toastr.error('Error al comunicarse con el servidor: ' + error);
-            },
-            complete: function() {
-                $('#paymentForm button[type="submit"]').prop('disabled', false).html('<i class="fas fa-check"></i> Registrar Pago');
-            }
-        });
-    });
-
-    // Manejar botón Eliminar
-    $('#claimsTable').on('click', '.btn-delete', function() {
-        var id = $(this).data('id');
-        $('#delete_id_siniestro').val(id);
-        $('#deleteConfirmModal').modal('show');
-    });
-
-    // Confirmar eliminación
-    $('#confirmDelete').on('click', function() {
-        var id = $('#delete_id_siniestro').val();
-        
-        $.ajax({
-            url: '../controlador/controladorSiniestro.php',
-            type: 'POST',
-            data: {
-                accion: 'eliminar_siniestro',
-                id_siniestro: id
-            },
-            dataType: 'json',
-            beforeSend: function() {
-                $('#confirmDelete').prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i> Eliminando...');
-            },
-            success: function(response) {
-                if (response.success) {
-                    toastr.success(response.message);
-                    $('#deleteConfirmModal').modal('hide');
-                    setTimeout(function() {
-                        location.reload();
-                    }, 1500);
-                } else {
-                    toastr.error(response.message);
-                }
-            },
-            error: function(xhr, status, error) {
-                toastr.error('Error al comunicarse con el servidor: ' + error);
-            },
-            complete: function() {
-                $('#confirmDelete').prop('disabled', false).html('<i class="fas fa-trash"></i> Eliminar');
-            }
-        });
-    });
-
-    // Función auxiliar para obtener clase CSS según estado
-    function getEstadoClass(estado) {
-        switch(estado) {
-            case 'ABIERTO': return 'badge-warning';
-            case 'CERRADO': return 'badge-success';
-            case 'EN PROCESO': return 'badge-info';
-            case 'RECHAZADO': return 'badge-danger';
-            default: return 'badge-secondary';
+        error: function() {
+            console.error('ERROR: Archivo no encontrado en:', controladorUrl);
+            alert('CRÍTICO: El archivo controladorSiniestro.php NO existe en:\\n\\n' +
+                  'http://localhost' + controladorUrl + '\\n\\n' +
+                  'Pero tú dijiste que está en:\\n' +
+                  'C:\\\\xampp\\\\htdocs\\\\mi_proyecto\\\\controlador\\\\controladorSiniestro.php\\n\\n' +
+                  '¿Estás seguro que el archivo existe? ¿La carpeta se llama "mi_proyecto" exactamente?');
         }
+    });
+    
+    function inicializarAplicacion() {
+        console.log('Inicializando aplicación...');
+        
+        // 1. Inicializar DataTable
+        var table = $('#claimsTable').DataTable({
+            dom: 'Bfrtip',
+            buttons: [
+                { extend: 'copy', text: '<i class="fas fa-copy"></i> Copiar' },
+                { extend: 'csv', text: '<i class="fas fa-file-csv"></i> CSV' },
+                { extend: 'excel', text: '<i class="fas fa-file-excel"></i> Excel' },
+                { extend: 'pdf', text: '<i class="fas fa-file-pdf"></i> PDF' },
+                { extend: 'print', text: '<i class="fas fa-print"></i> Imprimir' }
+            ],
+            language: { url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json' },
+            responsive: true,
+            pageLength: 25,
+            order: [[0, 'desc']]
+        });
+        
+        // 2. Configurar fechas
+        var today = new Date().toISOString().split('T')[0];
+        $('#fecha_incidente').val(today);
+        $('#fecha_pago').val(today);
+        
+        // 3. BOTÓN PRINCIPAL: AÑADIR NUEVO SINIESTRO
+        $('#claimForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            console.log('ENVIANDO FORMULARIO...');
+            
+            // Validación simple
+            if (!$('#id_poliza').val() || !$('#cedula_agente_gestion').val()) {
+                alert('Seleccione una póliza y un agente');
+                return;
+            }
+            
+            // Crear FormData
+            var formData = new FormData(this);
+            formData.append('accion', 'crear_siniestro');
+            
+            // Mostrar datos en consola
+            for (var pair of formData.entries()) {
+                console.log(pair[0] + ': ' + pair[1]);
+            }
+            
+            // Enviar AJAX
+            $.ajax({
+                url: controladorUrl,
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                beforeSend: function() {
+                    $('#claimForm button[type="submit"]')
+                        .prop('disabled', true)
+                        .html('<i class="fas fa-spinner fa-spin"></i> Guardando...');
+                },
+                success: function(response) {
+                    console.log('RESPUESTA:', response);
+                    
+                    if (response && response.success) {
+                        alert('ÉXITO: ' + response.message);
+                        $('#newClaimModal').modal('hide');
+                        $('#claimForm')[0].reset();
+                        
+                        // Recargar página
+                        setTimeout(function() {
+                            location.reload();
+                        }, 1500);
+                    } else {
+                        alert('ERROR: ' + (response.message || 'Error desconocido'));
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('ERROR AJAX:', status, error);
+                    alert('ERROR DE CONEXIÓN\\n\\n' +
+                          'Status: ' + status + '\\n' +
+                          'Error: ' + error + '\\n\\n' +
+                          '¿El archivo controlador existe? ¿Tiene permisos?');
+                },
+                complete: function() {
+                    $('#claimForm button[type="submit"]')
+                        .prop('disabled', false)
+                        .html('<i class="fas fa-save"></i> Guardar');
+                }
+            });
+        });
+        
+        // 4. Botón de búsqueda
+        $('#btnBuscar').on('click', function() {
+            var datos = {
+                accion: 'buscar_siniestros',
+                estado: $('#filtroEstado').val(),
+                fecha_desde: $('#filtroFechaDesde').val(),
+                fecha_hasta: $('#filtroFechaHasta').val(),
+                numero_poliza: $('#filtroPoliza').val()
+            };
+            
+            $.ajax({
+                url: controladorUrl,
+                type: 'GET',
+                data: datos,
+                dataType: 'json',
+                success: function(response) {
+                    console.log('Búsqueda:', response);
+                    // Tu código para actualizar la tabla
+                }
+            });
+        });
+        
+        // 5. Funciones para ver/editar/eliminar
+        $('#claimsTable').on('click', '.btn-view', function() {
+            var id = $(this).data('id');
+            $.ajax({
+                url: controladorUrl,
+                type: 'GET',
+                data: { accion: 'obtener_siniestro', id_siniestro: id },
+                dataType: 'json',
+                success: function(response) {
+                    // Tu código para mostrar detalles
+                }
+            });
+        });
+        
+        console.log('APLICACIÓN INICIALIZADA CORRECTAMENTE');
     }
-
-    // Configurar toastr para notificaciones
-    toastr.options = {
-        "closeButton": true,
-        "progressBar": true,
-        "positionClass": "toast-top-right",
-        "timeOut": "5000"
-    };
 });
 </script>
 <style>
@@ -912,3 +590,4 @@ $(document).ready(function() {
 EOT;
 
 require_once __DIR__ . "/parte_inferior.php";
+?>

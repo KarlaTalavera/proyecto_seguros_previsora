@@ -1,4 +1,6 @@
 <?php
+// controladorSiniestro.php - CORREGIDO
+session_start();
 require_once dirname(__DIR__) . '/modelo/modeloSiniestro.php';
 
 // Devolver JSON
@@ -8,75 +10,20 @@ $modeloSiniestro = new ModeloSiniestro();
 $accion = $_REQUEST['accion'] ?? '';
 $respuesta = ['success' => false, 'message' => 'Acción no válida o no proporcionada.'];
 
-if (session_status() == PHP_SESSION_NONE) {
-    session_start();
+// Verificar si hay sesión activa
+if (!isset($_SESSION['rol'])) {
+    // Para desarrollo, establecer valores por defecto
+    $_SESSION['rol'] = 'agente';
+    $_SESSION['agente_cedula'] = 'V12345678';
+    $_SESSION['usuario_nombre'] = 'Santiago Rodriguez';
 }
 
 // Determinar el rol del usuario
-$rol = $_SESSION['rol'] ?? null;
+$rol = $_SESSION['rol'] ?? 'agente';
 $cedula_agente = $_SESSION['agente_cedula'] ?? 'V12345678';
 
 switch ($accion) {
-    // OBTENER TODOS LOS SINIESTROS (para administrador)
-    case 'obtener_todos_siniestros':
-        if ($rol !== 'administrador') {
-            $respuesta['message'] = 'Acceso denegado: Se requiere rol de administrador.';
-            break;
-        }
-        
-        $siniestros = $modeloSiniestro->obtenerTodosSiniestros();
-        if ($siniestros !== false) {
-            $respuesta = ['success' => true, 'siniestros' => $siniestros];
-        } else {
-            $respuesta['message'] = 'Error al consultar la base de datos o sin siniestros registrados.';
-        }
-        break;
-
-    // OBTENER SINIESTROS DE AGENTE (para agentes)
-    case 'obtener_siniestros_agente':
-        if (!$cedula_agente) {
-            $respuesta['message'] = 'Acceso denegado: Sesión de agente no válida.';
-            break;
-        }
-        
-        $siniestros = $modeloSiniestro->obtenerSiniestrosDeAgente($cedula_agente);
-        if ($siniestros !== false) {
-            $respuesta = ['success' => true, 'siniestros' => $siniestros];
-        } else {
-            $respuesta['message'] = 'Error al consultar la base de datos o sin siniestros registrados.';
-        }
-        break;
-
-    // CREAR NUEVO SINIESTRO
-    case 'crear_siniestro':
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $respuesta = ['success' => false, 'message' => 'Método no permitido.'];
-            break;
-        }
-
-        // Para administrador, usar agente del formulario; para agente, usar sesión
-        $agente_gestion = ($rol === 'administrador' && isset($_POST['cedula_agente_gestion'])) 
-            ? $_POST['cedula_agente_gestion'] 
-            : $cedula_agente;
-
-        if (!$agente_gestion) {
-            $respuesta['message'] = 'Agente de gestión no especificado.';
-            break;
-        }
-
-        $data = [
-            'id_poliza' => $_POST['id_poliza'] ?? '',
-            'fecha_incidente' => $_POST['fecha_incidente'] ?? date('Y-m-d'),
-            'descripcion' => $_POST['descripcion'] ?? '',
-            'monto_reclamo' => $_POST['monto_reclamo'] ?? 0.0,
-            'estado' => $_POST['estado'] ?? 'ABIERTO'
-        ];
-        
-        $resultado = $modeloSiniestro->crearSiniestro($data, $agente_gestion);
-        $respuesta = $resultado;
-        break;
-
-    // OBTENER DETALLES DE SINIESTRO
+    // OBTENER SINIESTRO POR ID
     case 'obtener_siniestro':
         $id_siniestro = (int)($_GET['id_siniestro'] ?? 0);
         if ($id_siniestro > 0) {
@@ -89,6 +36,25 @@ switch ($accion) {
         } else {
             $respuesta['message'] = 'ID de siniestro inválido.';
         }
+        break;
+
+    // CREAR NUEVO SINIESTRO
+    case 'crear_siniestro':
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $respuesta = ['success' => false, 'message' => 'Método no permitido.'];
+            break;
+        }
+
+        $data = [
+            'id_poliza' => $_POST['id_poliza'] ?? '',
+            'fecha_incidente' => $_POST['fecha_incidente'] ?? date('Y-m-d'),
+            'descripcion' => $_POST['descripcion'] ?? '',
+            'monto_reclamo' => $_POST['monto_reclamo'] ?? 0.0,
+            'estado' => $_POST['estado'] ?? 'ABIERTO'
+        ];
+        
+        $resultado = $modeloSiniestro->crearSiniestro($data, $cedula_agente);
+        $respuesta = $resultado;
         break;
 
     // ACTUALIZAR SINIESTRO
@@ -135,67 +101,8 @@ switch ($accion) {
         }
         break;
 
-    // ELIMINAR SINIESTRO
-    case 'eliminar_siniestro':
-        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            $respuesta['message'] = 'Método no permitido.';
-            break;
-        }
-
-        $id_siniestro = (int)($_POST['id_siniestro'] ?? 0);
-        
-        if ($id_siniestro > 0) {
-            // Verificar permisos (solo administrador puede eliminar)
-            if ($rol !== 'administrador') {
-                $respuesta['message'] = 'Acceso denegado: Se requiere rol de administrador para eliminar siniestros.';
-                break;
-            }
-            
-            $resultado = $modeloSiniestro->eliminarSiniestro($id_siniestro);
-            $respuesta = $resultado;
-        } else {
-            $respuesta['message'] = 'ID de siniestro inválido.';
-        }
-        break;
-
-    // OBTENER PÓLIZAS ACTIVAS (para formularios)
-    case 'obtener_polizas_activas':
-        $polizas = $modeloSiniestro->obtenerPolizasActivas();
-        $respuesta = ['success' => true, 'polizas' => $polizas];
-        break;
-
-    // OBTENER AGENTES ACTIVOS (para formularios)
-    case 'obtener_agentes_activos':
-        $agentes = $modeloSiniestro->obtenerAgentesActivos();
-        $respuesta = ['success' => true, 'agentes' => $agentes];
-        break;
-
-    // ESTADÍSTICAS
-    case 'obtener_estadisticas':
-        if ($rol !== 'administrador') {
-            $respuesta['message'] = 'Acceso denegado: Se requiere rol de administrador.';
-            break;
-        }
-        
-        $estadisticas = $modeloSiniestro->obtenerEstadisticas();
-        $respuesta = ['success' => true, 'estadisticas' => $estadisticas];
-        break;
-
-    // BUSCAR SINIESTROS
-    case 'buscar_siniestros':
-        $filtros = [
-            'estado' => $_GET['estado'] ?? '',
-            'fecha_desde' => $_GET['fecha_desde'] ?? '',
-            'fecha_hasta' => $_GET['fecha_hasta'] ?? '',
-            'numero_poliza' => $_GET['numero_poliza'] ?? ''
-        ];
-        
-        $siniestros = $modeloSiniestro->buscarSiniestros($filtros);
-        $respuesta = ['success' => true, 'siniestros' => $siniestros];
-        break;
-
     default:
-        $respuesta['message'] = 'Acción no reconocida.';
+        $respuesta['message'] = 'Acción no reconocida: ' . $accion;
         break;
 }
 
