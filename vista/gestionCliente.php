@@ -218,12 +218,28 @@ if (is_array($todosLosUsuarios)) {
 </div>
 
 <?php
-$extra_scripts = <<<EOT
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+$dataTablesCss = resolveAssetPath(
+    'vendor/datatables/dataTables.bootstrap4.min.css',
+    'https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css'
+);
+$dataTablesCore = resolveAssetPath(
+    'vendor/datatables/jquery.dataTables.min.js',
+    'https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js'
+);
+$dataTablesBootstrap = resolveAssetPath(
+    'vendor/datatables/dataTables.bootstrap4.min.js',
+    'https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js'
+);
+
+$scriptBuffer = function () use ($dataTablesCss, $dataTablesCore, $dataTablesBootstrap) {
+    ob_start();
+    ?>
+<link rel="stylesheet" href="<?php echo htmlspecialchars($dataTablesCss, ENT_QUOTES, 'UTF-8'); ?>">
+<script src="<?php echo htmlspecialchars($dataTablesCore, ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script src="<?php echo htmlspecialchars($dataTablesBootstrap, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    if (window.jQuery && $.fn.DataTable) {
+  jQuery(function($) {
+    if ($.fn.DataTable) {
       $('#clientsTable').DataTable({
         pageLength: 10,
         order: [[1, 'asc']],
@@ -310,7 +326,7 @@ $extra_scripts = <<<EOT
             $('#modalNuevoCliente').modal('hide');
             let msg = res.message || 'Cliente creado correctamente.';
             if (res.password) {
-              msg += '\nContraseña asignada: ' + res.password;
+              msg += '\\nContraseña asignada: ' + res.password;
             }
             alert(msg);
             window.location.reload();
@@ -440,6 +456,9 @@ $extra_scripts = <<<EOT
     });
   });
 </script>
-EOT;
+<?php
+    return ob_get_clean();
+};
+
+$extra_scripts = isset($extra_scripts) ? $extra_scripts . $scriptBuffer() : $scriptBuffer();
 require_once __DIR__ . '/parte_inferior.php';
-?>

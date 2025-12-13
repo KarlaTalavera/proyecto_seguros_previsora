@@ -52,7 +52,7 @@ $sbAdminJs = resolveAssetPath('js/sb-admin-2.min.js', 'js/sb-admin-2.min.js');
                         <span aria-hidden="true">×</span>
                     </button>
                 </div>
-                <div class="modal-body">¿Desea cerrar sesión?</div>
+                <div class="modal-body">Selecciona «Cerrar sesión» para finalizar tu sesión actual.</div>
                 <div class="modal-footer">
                     <button class="btn btn-secondary" type="button" data-dismiss="modal">Cancelar</button>
                     <a class="btn btn-primary" href="logout.php">Cerrar sesión</a>
