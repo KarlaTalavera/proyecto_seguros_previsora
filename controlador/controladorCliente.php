@@ -12,6 +12,11 @@ error_log("Acción recibida: " . $accion);
 error_log("POST recibido: " . print_r($_POST, true));
 
 switch ($accion) {
+    case 'listar_clientes':
+        $clientes = $modeloCliente->obtenerTodosLosClientes();
+        echo json_encode(['success' => true, 'data' => $clientes]);
+        exit;
+
     case 'crear_cliente':
         $data = [
             'cedula_asegurado' => $_POST['cedula_asegurado'] ?? '',
@@ -20,6 +25,7 @@ switch ($accion) {
             'email'            => $_POST['email'] ?? '',
             'telefono'         => $_POST['telefono'] ?? '',
             'direccion'        => $_POST['direccion'] ?? '',
+            'fecha_nacimiento' => $_POST['fecha_nacimiento'] ?? '', // ¡Agrega esta línea!
         ];
         
         // DEPURACIÓN: Verificar cada campo
@@ -50,6 +56,7 @@ switch ($accion) {
             'email'            => $_POST['email'] ?? '',
             'telefono'         => $_POST['telefono'] ?? '',
             'direccion'        => $_POST['direccion'] ?? '',
+            'fecha_nacimiento' => $_POST['fecha_nacimiento'] ?? '', // ¡Agrega esta línea!
         ];
 
         // DEPURACIÓN: Verificar cada campo

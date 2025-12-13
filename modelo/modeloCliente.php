@@ -36,17 +36,18 @@ class ModeloCliente {
         }
         
         $sql = "SELECT 
-                    c.id_cliente,
-                    c.cedula_asegurado,
-                    c.nombre,
-                    c.apellido,
-                    c.telefono,
-                    c.direccion,
-                    u.email
-                FROM cliente c
-                INNER JOIN usuario u ON c.cedula_asegurado = u.cedula
-                WHERE u.id_rol = 3  -- Solo clientes (rol asegurado)
-                ORDER BY c.id_cliente DESC";
+            c.id_cliente,
+            c.cedula_asegurado,
+            c.nombre,
+            c.apellido,
+            c.telefono,
+            c.direccion,
+            c.fecha_nacimiento,  
+            u.email
+        FROM cliente c
+        INNER JOIN usuario u ON c.cedula_asegurado = u.cedula
+        WHERE u.id_rol = 3
+        ORDER BY c.id_cliente DESC";
         
         try {
             $stmt = $this->db->prepare($sql);
@@ -118,18 +119,18 @@ class ModeloCliente {
             ]);
             
             // 3. Crear cliente
-            $sqlCliente = "INSERT INTO cliente (cedula_asegurado, nombre, apellido, telefono, direccion) 
-                          VALUES (:cedula, :nombre, :apellido, :telefono, :direccion)";
-            
+           $sqlCliente = "INSERT INTO cliente (cedula_asegurado, nombre, apellido, telefono, direccion, fecha_nacimiento) 
+            VALUES (:cedula, :nombre, :apellido, :telefono, :direccion, :fecha_nacimiento)";
+
             $stmtCliente = $this->db->prepare($sqlCliente);
             $stmtCliente->execute([
                 ':cedula' => $data['cedula_asegurado'],
                 ':nombre' => trim($data['nombre']),
                 ':apellido' => trim($data['apellido']),
                 ':telefono' => trim($data['telefono']),
-                ':direccion' => trim($data['direccion'] ?? '')
-            ]);
-            
+                ':direccion' => trim($data['direccion'] ?? ''),
+                ':fecha_nacimiento' => !empty($data['fecha_nacimiento']) ? $data['fecha_nacimiento'] : null,
+            ]);     
             $idCliente = $this->db->lastInsertId();
             
             $this->db->commit();
@@ -212,19 +213,21 @@ class ModeloCliente {
             
             // 3. Actualizar cliente
             $sqlCliente = "UPDATE cliente 
-                          SET nombre = :nombre, 
-                              apellido = :apellido, 
-                              telefono = :telefono, 
-                              direccion = :direccion
-                          WHERE id_cliente = :id_cliente";
-            
+            SET nombre = :nombre, 
+                apellido = :apellido, 
+                telefono = :telefono, 
+                direccion = :direccion,
+                fecha_nacimiento = :fecha_nacimiento
+            WHERE id_cliente = :id_cliente";
+
             $stmtCliente = $this->db->prepare($sqlCliente);
             $stmtCliente->execute([
                 ':id_cliente' => $data['id_cliente'],
                 ':nombre' => trim($data['nombre']),
                 ':apellido' => trim($data['apellido']),
                 ':telefono' => trim($data['telefono']),
-                ':direccion' => trim($data['direccion'] ?? '')
+                ':direccion' => trim($data['direccion'] ?? ''),
+                ':fecha_nacimiento' => !empty($data['fecha_nacimiento']) ? $data['fecha_nacimiento'] : null,
             ]);
             
             // 4. Actualizar usuario (si cambió la cédula o email)
@@ -364,14 +367,7 @@ class ModeloCliente {
             return null;
         }
         
-        $sql = "SELECT 
-                    c.id_cliente,
-                    c.cedula_asegurado,
-                    c.nombre,
-                    c.apellido,
-                    c.telefono,
-                    c.direccion,
-                    u.email
+        $sql = "SELECT c.id_cliente, c.cedula_asegurado, c.nombre, c.apellido, c.telefono, c.direccion, c.fecha_nacimiento, u.email
                 FROM cliente c
                 INNER JOIN usuario u ON c.cedula_asegurado = u.cedula
                 WHERE c.id_cliente = :id_cliente";

@@ -9,7 +9,8 @@ require_once __DIR__ . '/parte_superior.php';
 <div class="container-fluid">
   <h3>Mis reportes</h3>
 
-  <div class="card mt-3">
+  
+  <!--<div class="card mt-3">
     <div class="card-body d-flex flex-column flex-md-row justify-content-between align-items-start">
       <div class="mb-3 mb-md-0">
         <h5 class="card-title mb-1">Dashboard personal completo</h5>
@@ -25,7 +26,7 @@ require_once __DIR__ . '/parte_superior.php';
       </div>
     </div>
   </div>
-
+  -->
   <div class="card mt-3">
     <div class="card-body">
       <h5 class="card-title mb-3">Descargar gráficas específicas</h5>
