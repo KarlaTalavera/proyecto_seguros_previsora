@@ -265,6 +265,28 @@ INSERT INTO `poliza_cuota` (`id_cuota`, `id_poliza`, `numero_cuota`, `fecha_venc
 -- --------------------------------------------------------
 
 --
+-- Estructura de tabla para la tabla `reporte_pago_cuota`
+--
+
+CREATE TABLE `reporte_pago_cuota` (
+  `id_reporte` int(10) UNSIGNED NOT NULL,
+  `id_cuota` int(10) UNSIGNED NOT NULL,
+  `id_poliza` int(10) UNSIGNED NOT NULL,
+  `reportado_por` varchar(20) NOT NULL,
+  `monto_reportado` decimal(12,2) NOT NULL,
+  `referencia_pago` varchar(100) NOT NULL,
+  `ruta_comprobante` varchar(255) NOT NULL,
+  `nota_cliente` text DEFAULT NULL,
+  `estado` enum('PENDIENTE','APROBADO','RECHAZADO') NOT NULL DEFAULT 'PENDIENTE',
+  `motivo_rechazo` text DEFAULT NULL,
+  `fecha_reporte` timestamp NOT NULL DEFAULT current_timestamp(),
+  `fecha_revision` timestamp NULL DEFAULT NULL,
+  `revisado_por` varchar(20) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- --------------------------------------------------------
+
+--
 -- Estructura de tabla para la tabla `rol`
 --
 
@@ -487,6 +509,18 @@ ALTER TABLE `poliza_cuota`
   ADD UNIQUE KEY `uq_poliza_cuota` (`id_poliza`,`numero_cuota`);
 
 --
+-- Indices de la tabla `reporte_pago_cuota`
+--
+ALTER TABLE `reporte_pago_cuota`
+  ADD PRIMARY KEY (`id_reporte`),
+  ADD KEY `fk_rpc_cuota` (`id_cuota`),
+  ADD KEY `fk_rpc_poliza` (`id_poliza`),
+  ADD KEY `fk_rpc_reportado_por` (`reportado_por`),
+  ADD KEY `fk_rpc_revisado_por` (`revisado_por`),
+  ADD KEY `idx_rpc_estado` (`estado`),
+  ADD KEY `idx_rpc_fecha` (`fecha_reporte`);
+
+--
 -- Indices de la tabla `rol`
 --
 ALTER TABLE `rol`
@@ -566,6 +600,12 @@ ALTER TABLE `poliza_cuota`
   MODIFY `id_cuota` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
+-- AUTO_INCREMENT de la tabla `reporte_pago_cuota`
+--
+ALTER TABLE `reporte_pago_cuota`
+  MODIFY `id_reporte` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 --
 -- AUTO_INCREMENT de la tabla `rol`
 --
@@ -627,6 +667,15 @@ ALTER TABLE `poliza_cobertura`
 --
 ALTER TABLE `poliza_cuota`
   ADD CONSTRAINT `fk_poliza_cuota_poliza` FOREIGN KEY (`id_poliza`) REFERENCES `poliza` (`id_poliza`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `reporte_pago_cuota`
+--
+ALTER TABLE `reporte_pago_cuota`
+  ADD CONSTRAINT `fk_rpc_cuota` FOREIGN KEY (`id_cuota`) REFERENCES `poliza_cuota` (`id_cuota`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_rpc_poliza` FOREIGN KEY (`id_poliza`) REFERENCES `poliza` (`id_poliza`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_rpc_reportado_por` FOREIGN KEY (`reportado_por`) REFERENCES `usuario` (`cedula`) ON DELETE CASCADE,
+  ADD CONSTRAINT `fk_rpc_revisado_por` FOREIGN KEY (`revisado_por`) REFERENCES `usuario` (`cedula`) ON DELETE SET NULL;
 
 --
 -- Filtros para la tabla `siniestro`

@@ -380,10 +380,20 @@ $dataTablesCss = resolveAssetPath(
 			color: var(--color-text-primary);
 			transition: background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
 		}
+		.card > .card-header {
+			background: var(--color-bg-card);
+			border-bottom: 1px solid var(--color-border);
+			color: var(--color-text-primary);
+		}
+		.card > .card-header small,
+		.card > .card-header .text-muted {
+			color: var(--color-text-muted) !important;
+		}
 		.card.border-left-primary,
 		.card.border-left-success,
 		.card.border-left-info,
-		.card.border-left-warning {
+		.card.border-left-warning,
+		.card.border-left-danger {
 			position: relative;
 			border-radius: 1rem;
 			border: 1px solid var(--color-border-strong);
@@ -403,17 +413,22 @@ $dataTablesCss = resolveAssetPath(
 		.card.border-left-warning {
 			background: linear-gradient(120deg, rgba(246, 173, 85, 0.1) 0%, var(--color-bg-card) 45%) !important;
 		}
+		.card.border-left-danger {
+			background: linear-gradient(120deg, rgba(231, 74, 59, 0.1) 0%, var(--color-bg-card) 45%) !important;
+		}
 		.card.border-left-primary .card-body,
 		.card.border-left-success .card-body,
 		.card.border-left-info .card-body,
-		.card.border-left-warning .card-body {
+		.card.border-left-warning .card-body,
+		.card.border-left-danger .card-body {
 			position: relative;
 			z-index: 1;
 		}
 		.card.border-left-primary::before,
 		.card.border-left-success::before,
 		.card.border-left-info::before,
-		.card.border-left-warning::before {
+		.card.border-left-warning::before,
+		.card.border-left-danger::before {
 			content: "";
 			position: absolute;
 			top: 12px;
@@ -426,7 +441,8 @@ $dataTablesCss = resolveAssetPath(
 		.card.border-left-primary::after,
 		.card.border-left-success::after,
 		.card.border-left-info::after,
-		.card.border-left-warning::after {
+		.card.border-left-warning::after,
+		.card.border-left-danger::after {
 			content: "";
 			position: absolute;
 			inset: 0;
@@ -447,10 +463,23 @@ $dataTablesCss = resolveAssetPath(
 		.card.border-left-warning::before {
 			background: linear-gradient(180deg, var(--kpi-border-warning) 0%, rgba(217, 119, 6, 0.32) 100%);
 		}
+		.card.border-left-danger::before {
+			background: linear-gradient(180deg, rgba(231, 76, 60, 0.95) 0%, rgba(179, 44, 35, 0.4) 100%);
+		}
+	html[data-theme="dark"] .card > .card-header {
+		background: linear-gradient(145deg, rgba(28, 34, 62, 0.95), rgba(16, 20, 44, 0.92));
+		border-bottom-color: rgba(167, 139, 250, 0.26);
+		color: rgba(233, 236, 255, 0.94);
+	}
+	html[data-theme="dark"] .card > .card-header small,
+	html[data-theme="dark"] .card > .card-header .text-muted {
+		color: rgba(188, 195, 245, 0.85) !important;
+	}
 		html[data-theme="dark"] .card.border-left-primary,
 		html[data-theme="dark"] .card.border-left-success,
 		html[data-theme="dark"] .card.border-left-info,
-		html[data-theme="dark"] .card.border-left-warning {
+		html[data-theme="dark"] .card.border-left-warning,
+		html[data-theme="dark"] .card.border-left-danger {
 			border-color: rgba(235, 235, 255, 0.22);
 			box-shadow:
 				0 0 0 2px rgba(255, 255, 255, 0.18),
@@ -461,7 +490,8 @@ $dataTablesCss = resolveAssetPath(
 		html[data-theme="dark"] .card.border-left-primary::after,
 		html[data-theme="dark"] .card.border-left-success::after,
 		html[data-theme="dark"] .card.border-left-info::after,
-		html[data-theme="dark"] .card.border-left-warning::after {
+		html[data-theme="dark"] .card.border-left-warning::after,
+		html[data-theme="dark"] .card.border-left-danger::after {
 			border-width: 1.5px;
 			border-color: rgba(255, 255, 255, 0.42);
 			opacity: 1;
@@ -478,6 +508,9 @@ $dataTablesCss = resolveAssetPath(
 		html[data-theme="dark"] .card.border-left-warning {
 			background: linear-gradient(120deg, rgba(251, 191, 36, 0.3) 0%, rgba(29, 34, 60, 0.96) 38%, rgba(23, 27, 52, 0.92) 100%) !important;
 		}
+		html[data-theme="dark"] .card.border-left-danger {
+			background: linear-gradient(120deg, rgba(240, 82, 67, 0.4) 0%, rgba(29, 34, 60, 0.96) 38%, rgba(23, 27, 52, 0.92) 100%) !important;
+		}
 		html[data-theme="dark"] .card.border-left-primary::before {
 			background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(190, 160, 255, 0.6) 46%, rgba(105, 67, 187, 0.7) 100%);
 		}
@@ -489,6 +522,9 @@ $dataTablesCss = resolveAssetPath(
 		}
 		html[data-theme="dark"] .card.border-left-warning::before {
 			background: linear-gradient(180deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 206, 92, 0.55) 46%, rgba(181, 92, 16, 0.7) 100%);
+		}
+		html[data-theme="dark"] .card.border-left-danger::before {
+			background: linear-gradient(180deg, rgba(255, 255, 255, 0.88) 0%, rgba(255, 168, 158, 0.58) 46%, rgba(176, 48, 41, 0.7) 100%);
 		}
 		.dashboard-card {
 			padding: 1.25rem;
@@ -768,6 +804,10 @@ $dataTablesCss = resolveAssetPath(
 			border: 1px solid transparent;
 			box-shadow: inset 3px 3px 6px rgba(0, 0, 0, 0.04), inset -3px -3px 6px rgba(255, 255, 255, 0.35), 4px 4px 12px rgba(24, 39, 58, 0.12);
 		}
+		.btn-neo > i:first-child,
+		.btn-neo > svg:first-child {
+			margin-right: 0.5rem;
+		}
 		.btn-neo--light {
 			background: rgba(240, 244, 255, 0.85);
 			color: #303a44;
@@ -885,6 +925,37 @@ $dataTablesCss = resolveAssetPath(
 			background: rgba(97, 83, 255, 0.06);
 			padding: 1rem 1.5rem;
 			gap: 0.75rem;
+		}
+		#logoutModal .modal-content {
+			border-radius: 1rem;
+			border: 1px solid var(--color-border);
+			background: var(--color-bg-card);
+			color: var(--color-text-primary);
+			box-shadow: 0 26px 60px rgba(15, 24, 45, 0.25);
+		}
+		#logoutModal .modal-header,
+		#logoutModal .modal-footer {
+			border-color: var(--color-border);
+			background: var(--color-bg-card);
+			color: var(--color-text-primary);
+		}
+		#logoutModal .modal-body {
+			color: var(--color-text-muted);
+		}
+		html[data-theme="dark"] #logoutModal .modal-content {
+			background: linear-gradient(155deg, rgba(28, 34, 62, 0.96), rgba(14, 18, 38, 0.92));
+			border: 1px solid rgba(147, 129, 255, 0.4);
+			color: rgba(231, 235, 255, 0.94);
+			box-shadow: 0 40px 85px rgba(4, 6, 18, 0.78);
+		}
+		html[data-theme="dark"] #logoutModal .modal-header,
+		html[data-theme="dark"] #logoutModal .modal-footer {
+			background: rgba(22, 27, 52, 0.94);
+			border-color: rgba(147, 129, 255, 0.35);
+			color: rgba(231, 235, 255, 0.92);
+		}
+		html[data-theme="dark"] #logoutModal .modal-body {
+			color: rgba(196, 204, 248, 0.86);
 		}
 		html[data-theme="dark"] .modal-consistent .modal-content {
 			background: linear-gradient(152deg, rgba(32, 38, 72, 0.96) 0%, rgba(16, 21, 44, 0.94) 55%, rgba(8, 11, 28, 0.9) 100%);
@@ -1049,6 +1120,7 @@ $dataTablesCss = resolveAssetPath(
 						<a class="collapse-item" href="index.php?vista=polizasAgente"><i class="fas fa-file-alt mr-1"></i> Polizas</a>
 						<!-- icono: siniestros -->
 						<a class="collapse-item" href="index.php?vista=siniestrosAgente"><i class="fas fa-ambulance mr-1"></i> Siniestros</a>
+						<a class="collapse-item" href="index.php?vista=pagosCuotasGestion"><i class="fas fa-money-check-alt mr-1"></i> Pagos de cuotas</a>
 						<?php if ($puedeGestionarSolicitudes): ?>
 						<a class="collapse-item" href="index.php?vista=solicitudesGestion"><i class="fas fa-inbox mr-1"></i> Solicitudes</a>
 						<?php endif; ?>
@@ -1072,6 +1144,7 @@ $dataTablesCss = resolveAssetPath(
                     <div class="bg-white py-2 collapse-inner rounded">
                         <a class="collapse-item" href="index.php?vista=polizasAdmin"><i class="fas fa-file-alt mr-1"></i> Polizas</a>
                         <a class="collapse-item" href="index.php?vista=siniestrosAdmin"><i class="fas fa-ambulance mr-1"></i> Siniestros</a>
+						<a class="collapse-item" href="index.php?vista=pagosCuotasGestion"><i class="fas fa-money-check-alt mr-1"></i> Pagos de cuotas</a>
 						<a class="collapse-item" href="index.php?vista=solicitudesGestion"><i class="fas fa-inbox mr-1"></i> Solicitudes</a>
                     </div>
                 </div>
@@ -1180,6 +1253,12 @@ $dataTablesCss = resolveAssetPath(
                     <i class="fas fa-fw fa-paper-plane"></i>
                     <span>Solicitudes</span></a>
             </li>
+
+				<li class="nav-item">
+					<a class="nav-link" href="index.php?vista=pagosCuotasCliente">
+						<i class="fas fa-fw fa-money-bill-wave"></i>
+						<span>Pagos de cuotas</span></a>
+				</li>
 			<?php endif; ?>
 
 			<!-- Nav Item - Tables -->

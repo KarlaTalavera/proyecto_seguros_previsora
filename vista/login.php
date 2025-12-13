@@ -41,6 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             
            
             $rol = $usuario->getNombreRol();
+            $_SESSION['rol'] = $rol;
 
             if ($rol === 'agente') {
                 try {

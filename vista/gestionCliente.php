@@ -198,73 +198,129 @@ $controladorPath = $rutaBase . '/controlador/controladorCliente.php';
 </div>
 
 <?php
-$extra_scripts = <<<EOT
-<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css">
-<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+$dataTablesCss = resolveAssetPath(
+    'vendor/datatables/dataTables.bootstrap4.min.css',
+    'https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css'
+);
+$dataTablesCore = resolveAssetPath(
+    'vendor/datatables/jquery.dataTables.min.js',
+    'https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js'
+);
+$dataTablesBootstrap = resolveAssetPath(
+    'vendor/datatables/dataTables.bootstrap4.min.js',
+    'https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js'
+);
+
+$scriptBuffer = function () use ($dataTablesCss, $dataTablesCore, $dataTablesBootstrap) {
+    ob_start();
+    ?>
+<link rel="stylesheet" href="<?php echo htmlspecialchars($dataTablesCss, ENT_QUOTES, 'UTF-8'); ?>">
+<script src="<?php echo htmlspecialchars($dataTablesCore, ENT_QUOTES, 'UTF-8'); ?>"></script>
+<script src="<?php echo htmlspecialchars($dataTablesBootstrap, ENT_QUOTES, 'UTF-8'); ?>"></script>
 <script>
-$(document).ready(function() {
-    // Variable global con la ruta del controlador
-    window.controladorUrl = '{$controladorPath}';
-    console.log('URL del controlador:', window.controladorUrl);
-    
-    // Inicializar DataTable con configuración manual en español
-    var table = $('#clientesTable').DataTable({
-        "language": {
-            "decimal": ",",
-            "thousands": ".",
-            "lengthMenu": "Mostrar _MENU_ registros por página",
-            "zeroRecords": "No se encontraron resultados",
-            "info": "Mostrando _START_ a _END_ de _TOTAL_ registros",
-            "infoEmpty": "Mostrando 0 a 0 de 0 registros",
-            "infoFiltered": "(filtrado de _MAX_ registros totales)",
-            "search": "Buscar:",
-            "paginate": {
-                "first": "Primero",
-                "last": "Último",
-                "next": "Siguiente",
-                "previous": "Anterior"
-            }
-        },
-        "order": [[0, "desc"]]
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.jQuery && $.fn.DataTable) {
+      $('#clientsTable').DataTable({
+        pageLength: 10,
+        order: [[1, 'asc']],
+        language: {
+          sProcessing: 'Procesando...',
+          sLengthMenu: 'Mostrar _MENU_ registros',
+          sZeroRecords: 'No se encontraron resultados',
+          sEmptyTable: 'Ningún dato disponible en esta tabla',
+          sInfo: 'Mostrando registros del _START_ al _END_ de un total de _TOTAL_ registros',
+          sInfoEmpty: 'Mostrando registros del 0 al 0 de un total de 0 registros',
+          sInfoFiltered: '(filtrado de un total de _MAX_ registros)',
+          sSearch: 'Buscar:',
+          sLoadingRecords: 'Cargando...',
+          oPaginate: {
+            sFirst: 'Primero',
+            sLast: 'Último',
+            sNext: 'Siguiente',
+            sPrevious: 'Anterior'
+          },
+          oAria: {
+            sSortAscending: ': Activar para ordenar la columna de manera ascendente',
+            sSortDescending: ': Activar para ordenar la columna de manera descendente'
+          }
+        }
+      });
+    }
+
+    $('#modalNuevoCliente').on('show.bs.modal', function() {
+      const form = $('#nuevoClienteForm');
+      if (form.length) {
+        form[0].reset();
+      }
+      $('#respuestaCrearCliente').hide().html('');
     });
-    
-    // Crear cliente
-    $('#nuevoClienteForm').on('submit', function(e) {
-        e.preventDefault();
-        const formData = $(this).serialize();
-        const boton = $(this).find('button[type="submit"]');
-        
-        console.log("Datos a enviar para crear:", formData);
-        console.log("URL del controlador:", window.controladorUrl);
-        
-        boton.prop('disabled', true).text('Guardando...');
-        $('#respuestaCliente').hide().html('');
-        
-        $.ajax({
-            url: window.controladorUrl,
-            type: 'POST',
-            data: formData,
-            dataType: 'json',
-            success: function(res) {
-                console.log("Respuesta del servidor:", res);
-                if (res.success) {
-                    $('#respuestaCliente').show().html('<div class="alert alert-success">' + res.message + '</div>');
-                    setTimeout(function() {
-                        $('#modalNuevoCliente').modal('hide');
-                        location.reload();
-                    }, 1500);
-                } else {
-                    $('#respuestaCliente').show().html('<div class="alert alert-danger">' + res.message + '</div>');
-                    boton.prop('disabled', false).text('Guardar Cliente');
-                }
-            },
-            error: function(xhr, status, error) {
-                console.log("Error en AJAX:", status, error);
-                console.log("Respuesta del servidor:", xhr.responseText);
-                $('#respuestaCliente').show().html('<div class="alert alert-danger">Error de conexión: ' + error + '</div>');
-                boton.prop('disabled', false).text('Guardar Cliente');
+
+    $('#btnGuardarCliente').on('click', function() {
+      const form = $('#nuevoClienteForm');
+      const boton = $(this);
+      $('#respuestaCrearCliente').hide().html('');
+      boton.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Guardando...');
+
+      const cedula = $('#clienteCedula').val().trim();
+      const nombre = $('#clienteNombre').val().trim();
+      const apellido = $('#clienteApellido').val().trim();
+      const email = $('#clienteEmail').val().trim();
+      const telefono = $('#clienteTelefono').val().trim();
+      const password = $('#clientePassword').val() || '';
+      const passwordConfirm = $('#clientePasswordConfirm').val() || '';
+      const direccion = $('#clienteDireccion').val().trim();
+      const fechaNacimiento = $('#clienteFechaNacimiento').val().trim();
+
+      const rePersona = /^V\d{7,8}$/i;
+      const reEntidad = /^(J|G|E|EM)\d{7,8}-\d{1}$/i;
+      const reEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      const reTelefono = /^[0-9\-\s\+]{7,20}$/;
+      const reFecha = /^\d{4}-\d{2}-\d{2}$/;
+
+      function showCreateClientError(msg) {
+        $('#respuestaCrearCliente').show().html('<div class="alert alert-danger">' + msg + '</div>');
+        boton.prop('disabled', false).text('Guardar');
+      }
+
+      if (!cedula) { showCreateClientError('Complete la cédula.'); return; }
+      if (!nombre) { showCreateClientError('Complete el nombre.'); return; }
+      if (!apellido) { showCreateClientError('Complete el apellido.'); return; }
+      if (!email) { showCreateClientError('Complete el email.'); return; }
+      if (!telefono) { showCreateClientError('Complete el teléfono.'); return; }
+
+      if (!(rePersona.test(cedula) || reEntidad.test(cedula))) { showCreateClientError('Formato de cédula inválido. Ej: V12345678 o J12345678-9'); return; }
+      if (!reEmail.test(email)) { showCreateClientError('Email inválido.'); return; }
+      if (!reTelefono.test(telefono)) { showCreateClientError('Teléfono inválido.'); return; }
+      if (fechaNacimiento && !reFecha.test(fechaNacimiento)) { showCreateClientError('Use el formato AAAA-MM-DD.'); return; }
+
+      if (password && password.length < 8) { showCreateClientError('La contraseña debe tener al menos 8 caracteres.'); return; }
+      if (password && password !== passwordConfirm) { showCreateClientError('Las contraseñas no coinciden.'); return; }
+
+      $.ajax({
+        url: 'controlador/controladorUsuario.php',
+        type: 'POST',
+        data: form.serialize() + '&accion=crear_usuario',
+        dataType: 'json',
+        success: function(res) {
+          if (res.success) {
+            $('#modalNuevoCliente').modal('hide');
+            let msg = res.message || 'Cliente creado correctamente.';
+            if (res.password) {
+              msg += '\nContraseña asignada: ' + res.password;
             }
-        });
+            alert(msg);
+            window.location.reload();
+          } else {
+            showCreateClientError(res.message || 'Error al crear cliente.');
+          }
+        },
+        error: function() {
+          showCreateClientError('Error de conexión al servidor.');
+        },
+        complete: function() {
+          boton.prop('disabled', false).text('Guardar');
+        }
+      });
     });
     
     // Cargar datos en modal de edición
@@ -374,6 +430,10 @@ $(document).ready(function() {
     });
 });
 </script>
-EOT;
+<?php
+    return ob_get_clean();
+};
+
+$extra_scripts = isset($extra_scripts) ? $extra_scripts . $scriptBuffer() : $scriptBuffer();
 require_once __DIR__ . '/parte_inferior.php';
 ?>
