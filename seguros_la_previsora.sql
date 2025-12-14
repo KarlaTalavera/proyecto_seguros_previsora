@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 13-12-2025 a las 20:49:11
+-- Tiempo de generación: 14-12-2025 a las 01:06:50
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -210,6 +210,23 @@ INSERT INTO `detalle_poliza` (`id_poliza`, `fecha_inicio`, `fecha_fin`, `monto_p
 (104, '2024-11-05', '2025-11-10', 800.00, 1, 800.00, '2025-04-19', 'ANUAL'),
 (105, '2025-09-05', '2025-11-17', 1500.00, 1, 1500.00, '2026-11-05', 'ANUAL'),
 (106, '2025-12-02', '2025-12-06', 5000.00, 5, 1000.00, '2025-12-10', 'MENSUAL');
+
+-- --------------------------------------------------------
+
+--
+-- Estructura de tabla para la tabla `notificacion`
+--
+
+CREATE TABLE `notificacion` (
+  `id_notificacion` int(10) UNSIGNED NOT NULL,
+  `cedula_destino` varchar(20) NOT NULL,
+  `titulo` varchar(200) NOT NULL,
+  `mensaje` text NOT NULL,
+  `tipo` enum('info','warning','success','danger','primary') NOT NULL DEFAULT 'info',
+  `enlace` varchar(255) DEFAULT NULL,
+  `leida` tinyint(1) NOT NULL DEFAULT 0,
+  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- --------------------------------------------------------
 
@@ -463,7 +480,8 @@ CREATE TABLE `solicitud_poliza` (
 INSERT INTO `solicitud_poliza` (`id_solicitud`, `id_cliente`, `cedula_cliente`, `id_categoria`, `id_tipo_poliza`, `descripcion`, `contacto_preferido`, `estado`, `cedula_agente_asignado`, `fecha_creacion`, `fecha_actualizacion`, `nota_interna`) VALUES
 (1, 1, 'V20000001', 1, 1, 'Cobertura complementaria para viajes frecuentes.', 'juan.perez@example.com', 'EN_REVISION', 'V26260313', '2025-11-20 18:30:00', '2025-12-03 23:49:25', NULL),
 (2, 2, 'V20000002', 3, 6, 'Actualizar póliza de comercio con cobertura robo.', '0414-7654321', 'CONTACTADO', 'V12345678', '2025-11-25 13:10:00', '2025-12-03 23:47:51', 'Cliente contactado, espera cotización.'),
-(0, 1, 'V20000001', 3, 8, 'necesito un pocoe vainas, por ejemplo, mas amigos, que el dolar baje y que las clases terminen, pero por ahora me conformo con tener una poliza que cubra los gastos en caso de que mi casa se prenda candela oh no mi casa tiooo xdxdxdxd', '0412-1365498', 'EN_REVISION', 'V26260313', '2025-12-03 23:08:50', '2025-12-03 23:08:50', NULL);
+(0, 1, 'V20000001', 3, 8, 'necesito un pocoe vainas, por ejemplo, mas amigos, que el dolar baje y que las clases terminen, pero por ahora me conformo con tener una poliza que cubra los gastos en caso de que mi casa se prenda candela oh no mi casa tiooo xdxdxdxd', '0412-1365498', 'EN_REVISION', 'V26260313', '2025-12-03 23:08:50', '2025-12-03 23:08:50', NULL),
+(0, 1, 'V20000001', 2, 5, 'Ejemplo', 'strb2006@gmail.com', 'EN_REVISION', 'V26260313', '2025-12-13 22:29:00', '2025-12-13 22:29:00', NULL);
 
 -- --------------------------------------------------------
 
@@ -493,7 +511,7 @@ CREATE TABLE `solicitud_siniestro` (
 
 INSERT INTO `solicitud_siniestro` (`id_solicitud`, `id_poliza`, `cedula_cliente`, `tipo_incidente`, `descripcion`, `fecha_incidente`, `lugar_incidente`, `estado`, `cedula_agente_asignado`, `fecha_creacion`, `fecha_actualizacion`, `nota_interna`, `fecha_cita`) VALUES
 (1, 100, 'V20000001', 'Choque frontal leve', 'Cliente solicita evaluación de daños en parachoques.', '2025-11-18', 'Caracas - Av. Libertador', 'CITA_PENDIENTE', 'V12345678', '2025-11-19 19:45:00', '2025-12-03 23:46:38', 'Coordinar perito para el 22/11.', '2025-11-22 10:30:00'),
-(2, 105, 'V20000002', 'Daño por agua', 'Inundación parcial del local comercial tras lluvia.', '2025-11-22', 'Valencia - Av. Bolívar', 'EN_GESTION', 'V26260313', '2025-11-23 12:15:00', '2025-12-03 23:49:06', NULL, NULL);
+(2, 105, 'V20000002', 'Daño por agua', 'Inundación parcial del local comercial tras lluvia.', '2025-11-22', 'Valencia - Av. Bolívar', 'EN_GESTION', 'V12345678', '2025-11-23 12:15:00', '2025-12-13 23:14:24', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -626,6 +644,17 @@ ALTER TABLE `detalle_poliza`
   ADD PRIMARY KEY (`id_poliza`);
 
 --
+-- Indices de la tabla `notificacion`
+--
+ALTER TABLE `notificacion`
+  ADD PRIMARY KEY (`id_notificacion`),
+  ADD KEY `fk_notificacion_usuario` (`cedula_destino`),
+  ADD KEY `idx_cedula_destino` (`cedula_destino`),
+  ADD KEY `idx_leida` (`leida`),
+  ADD KEY `idx_fecha_creacion` (`fecha_creacion`),
+  ADD KEY `idx_tipo` (`tipo`);
+
+--
 -- Indices de la tabla `permiso`
 --
 ALTER TABLE `permiso`
@@ -736,6 +765,12 @@ ALTER TABLE `cobertura`
   MODIFY `id_cobertura` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
+-- AUTO_INCREMENT de la tabla `notificacion`
+--
+ALTER TABLE `notificacion`
+  MODIFY `id_notificacion` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
 -- AUTO_INCREMENT de la tabla `permiso`
 --
 ALTER TABLE `permiso`
@@ -817,6 +852,12 @@ ALTER TABLE `cliente`
 --
 ALTER TABLE `detalle_poliza`
   ADD CONSTRAINT `fk_detalle_poliza_poliza` FOREIGN KEY (`id_poliza`) REFERENCES `poliza` (`id_poliza`) ON DELETE CASCADE;
+
+--
+-- Filtros para la tabla `notificacion`
+--
+ALTER TABLE `notificacion`
+  ADD CONSTRAINT `fk_notificacion_usuario` FOREIGN KEY (`cedula_destino`) REFERENCES `usuario` (`cedula`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `poliza`
