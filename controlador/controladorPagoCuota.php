@@ -1,6 +1,8 @@
 <?php
 require_once dirname(__DIR__) . '/modelo/modeloUsuario.php';
 require_once dirname(__DIR__) . '/modelo/modeloPagoCuota.php';
+require_once dirname(__DIR__) . '/modelo/modeloPoliza.php';
+require_once dirname(__DIR__) . '/modelo/modeloNotificacion.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -9,6 +11,9 @@ if (session_status() === PHP_SESSION_NONE) {
 header('Content-Type: application/json');
 
 $modelo = new ModeloPagoCuota();
+$modeloPoliza = new ModeloPoliza();
+$modeloNotificacion = new ModeloNotificacion();
+
 $accion = $_REQUEST['accion'] ?? '';
 
 $usuario = $_SESSION['datos_usuario'] ?? null;
@@ -93,6 +98,19 @@ switch ($accion) {
 
         if (!$respuesta['success']) {
             eliminarArchivoSiExiste($rutaRelativa);
+        } else {
+            // Notificar al agente sobre el nuevo reporte de pago
+            $detalleReporte = $modelo->obtenerReporteDetallado($respuesta['id']);
+            if ($detalleReporte && $detalleReporte['cedula_agente']) {
+                $modeloNotificacion->notificarPagoCuota(
+                    $respuesta['id'],
+                    $detalleReporte['cedula_asegurado'],
+                    $detalleReporte['cliente_nombre'],
+                    $detalleReporte['monto_reportado'],
+                    $detalleReporte['numero_poliza'],
+                    $detalleReporte['cedula_agente']
+                );
+            }
         }
         break;
 
@@ -177,6 +195,17 @@ switch ($accion) {
             break;
         }
         $respuesta = $modelo->aprobarReporte($idReporte, $cedulaSesion);
+        
+        // Notificar al cliente sobre la aprobación
+        if ($respuesta['success']) {
+            $modeloNotificacion->notificarResultadoPago(
+                $idReporte,
+                $detalle['cedula_asegurado'],
+                'APROBADO',
+                $detalle['numero_poliza'],
+                ''
+            );
+        }
         break;
 
     case 'rechazar_reporte':
@@ -204,6 +233,17 @@ switch ($accion) {
             break;
         }
         $respuesta = $modelo->rechazarReporte($idReporte, $cedulaSesion, $motivo);
+        
+        // Notificar al cliente sobre el rechazo
+        if ($respuesta['success']) {
+            $modeloNotificacion->notificarResultadoPago(
+                $idReporte,
+                $detalle['cedula_asegurado'],
+                'RECHAZADO',
+                $detalle['numero_poliza'],
+                $motivo
+            );
+        }
         break;
 
     default:

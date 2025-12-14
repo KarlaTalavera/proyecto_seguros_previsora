@@ -39,6 +39,7 @@ $vistas_permitidas = [
         'pagosCuotasGestion',
         'perfil',
         'login',
+        'notificaciones'
     ],
     'agente' => [
         'estadisticasAgente',
@@ -51,6 +52,7 @@ $vistas_permitidas = [
         'pagosCuotasGestion',
         'perfil',
         'login',
+        'notificaciones'
     ],
     'asegurado' => [
         'polizasCliente',
@@ -59,6 +61,7 @@ $vistas_permitidas = [
         'pagosCuotasCliente',
         'perfil',
         'login',
+        'notificaciones'
     ],
 ];
 

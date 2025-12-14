@@ -184,12 +184,41 @@ class ModeloSolicitud {
             $idGenerado = (int)$this->db->lastInsertId();
             $this->db->commit();
 
+            if ($idGenerado && $agenteAsignado) {
+                // Obtener información para notificación
+                $sqlInfo = "SELECT c.nombre, c.apellido, tp.nombre AS tipo_poliza_nombre 
+                        FROM cliente c
+                        JOIN tipo_poliza tp ON tp.id_tipo_poliza = :id_tipo
+                        WHERE c.id_cliente = :id_cliente";
+                $stmtInfo = $this->db->prepare($sqlInfo);
+                $stmtInfo->bindParam(':id_cliente', $idCliente, PDO::PARAM_INT);
+                $stmtInfo->bindParam(':id_tipo', $idTipoPoliza, PDO::PARAM_INT);
+                $stmtInfo->execute();
+                $info = $stmtInfo->fetch(PDO::FETCH_ASSOC);
+                
+                if ($info) {
+                    $clienteNombre = $info['nombre'] . ' ' . $info['apellido'];
+                    $tipoPoliza = $info['tipo_poliza_nombre'];
+                    
+                    // Crear notificación
+                    require_once dirname(__DIR__) . '/helpers/notificacionesHelper.php';
+                    NotificacionesHelper::notificarSolicitudPoliza(
+                        $idGenerado,
+                        $cedulaCliente,
+                        $clienteNombre,
+                        $tipoPoliza,
+                        $agenteAsignado
+                    );
+                }
+            }
+            
             return [
                 'success' => true,
                 'message' => 'Solicitud de póliza creada correctamente.',
                 'id_solicitud' => $idGenerado,
                 'agente_asignado' => $agenteAsignado,
             ];
+            
         } catch (PDOException $e) {
             $this->db->rollBack();
             error_log('ModeloSolicitud.crearSolicitudPoliza: ' . $e->getMessage());
@@ -266,6 +295,31 @@ class ModeloSolicitud {
             $idGenerado = (int)$this->db->lastInsertId();
             $this->db->commit();
 
+            if ($idGenerado && $agenteAsignado) {
+                // Obtener información para notificación
+                $sqlInfo = "SELECT c.nombre, c.apellido 
+                        FROM cliente c
+                        WHERE c.id_cliente = :id_cliente";
+                $stmtInfo = $this->db->prepare($sqlInfo);
+                $stmtInfo->bindParam(':id_cliente', $idCliente, PDO::PARAM_INT);
+                $stmtInfo->execute();
+                $info = $stmtInfo->fetch(PDO::FETCH_ASSOC);
+                
+                if ($info) {
+                    $clienteNombre = $info['nombre'] . ' ' . $info['apellido'];
+                    
+                    // Crear notificación
+                    require_once dirname(__DIR__) . '/helpers/notificacionesHelper.php';
+                    NotificacionesHelper::notificarSolicitudSiniestro(
+                        $idGenerado,
+                        $cedulaCliente,
+                        $clienteNombre,
+                        $tipoIncidente,
+                        $agenteAsignado
+                    );
+                }
+            }
+            
             return [
                 'success' => true,
                 'message' => 'Siniestro registrado correctamente.',
@@ -273,6 +327,7 @@ class ModeloSolicitud {
                 'agente_asignado' => $agenteAsignado,
                 'id_cliente' => $idCliente,
             ];
+
         } catch (PDOException $e) {
             $this->db->rollBack();
             error_log('ModeloSolicitud.crearSolicitudSiniestro: ' . $e->getMessage());
