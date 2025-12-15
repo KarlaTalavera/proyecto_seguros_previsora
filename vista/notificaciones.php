@@ -1,4 +1,5 @@
 <?php
+// CORREGIR las rutas en notificaciones.php
 require_once dirname(__DIR__) . '/modelo/modeloNotificacion.php';
 
 if (session_status() === PHP_SESSION_NONE) {
@@ -11,7 +12,18 @@ if (!isset($_SESSION['datos_usuario'])) {
 }
 
 $usuario = $_SESSION['datos_usuario'];
-$cedula = method_exists($usuario, 'getCedula') ? $usuario->getCedula() : '';
+
+// CORREGIR: Obtener cédula correctamente para objeto o array
+if (is_object($usuario) && method_exists($usuario, 'getCedula')) {
+    $cedula = $usuario->getCedula();
+} elseif (is_array($usuario) && isset($usuario['cedula'])) {
+    $cedula = $usuario['cedula'];
+} else {
+    // Si no se puede obtener, redirigir
+    header('Location: index.php?vista=login');
+    exit;
+}
+
 $modelo = new ModeloNotificacion();
 
 // Obtener parámetros de filtro
@@ -34,26 +46,32 @@ if (isset($_GET['marcar_todas']) && $_GET['marcar_todas'] == 1) {
     exit;
 }
 
-// Función para formatear fecha
+// Función para formatear fecha (CORREGIDA)
 function formatearFecha($fecha) {
-    $fechaObj = new DateTime($fecha);
-    $hoy = new DateTime();
-    $diferencia = $hoy->diff($fechaObj);
+    if (empty($fecha)) return 'Fecha desconocida';
     
-    if ($diferencia->d == 0) {
-        if ($diferencia->h == 0) {
-            if ($diferencia->i == 0) {
-                return 'Hace unos segundos';
+    try {
+        $fechaObj = new DateTime($fecha);
+        $hoy = new DateTime();
+        $diferencia = $hoy->diff($fechaObj);
+        
+        if ($diferencia->d == 0) {
+            if ($diferencia->h == 0) {
+                if ($diferencia->i == 0) {
+                    return 'Hace unos segundos';
+                }
+                return 'Hace ' . $diferencia->i . ' minuto' . ($diferencia->i > 1 ? 's' : '');
             }
-            return 'Hace ' . $diferencia->i . ' minuto' . ($diferencia->i > 1 ? 's' : '');
+            return 'Hace ' . $diferencia->h . ' hora' . ($diferencia->h > 1 ? 's' : '');
+        } elseif ($diferencia->d == 1) {
+            return 'Ayer a las ' . $fechaObj->format('H:i');
+        } elseif ($diferencia->d < 7) {
+            return 'Hace ' . $diferencia->d . ' día' . ($diferencia->d > 1 ? 's' : '');
+        } else {
+            return $fechaObj->format('d/m/Y H:i');
         }
-        return 'Hace ' . $diferencia->h . ' hora' . ($diferencia->h > 1 ? 's' : '');
-    } elseif ($diferencia->d == 1) {
-        return 'Ayer a las ' . $fechaObj->format('H:i');
-    } elseif ($diferencia->d < 7) {
-        return 'Hace ' . $diferencia->d . ' día' . ($diferencia->d > 1 ? 's' : '');
-    } else {
-        return $fechaObj->format('d/m/Y H:i');
+    } catch (Exception $e) {
+        return $fecha;
     }
 }
 
@@ -79,7 +97,7 @@ function obtenerColorTipo($tipo) {
     }
 }
 
-// CORREGIDO: Usar 'vista' en lugar de 'vistas'
+// CORREGIR: Incluir correctamente la parte superior
 require_once dirname(__DIR__) . '/vista/parte_superior.php';
 ?>
 
