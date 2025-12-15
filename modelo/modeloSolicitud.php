@@ -202,13 +202,16 @@ class ModeloSolicitud {
                     
                     // Crear notificación
                     require_once dirname(__DIR__) . '/helpers/notificacionesHelper.php';
-                    NotificacionesHelper::notificarSolicitudPoliza(
-                        $idGenerado,
-                        $cedulaCliente,
-                        $clienteNombre,
-                        $tipoPoliza,
-                        $agenteAsignado
-                    );
+                    // Nota: Asegurarse de que NotificacionesHelper exista o manejar error si no
+                    if (class_exists('NotificacionesHelper')) {
+                        NotificacionesHelper::notificarSolicitudPoliza(
+                            $idGenerado,
+                            $cedulaCliente,
+                            $clienteNombre,
+                            $tipoPoliza,
+                            $agenteAsignado
+                        );
+                    }
                 }
             }
             
@@ -310,13 +313,15 @@ class ModeloSolicitud {
                     
                     // Crear notificación
                     require_once dirname(__DIR__) . '/helpers/notificacionesHelper.php';
-                    NotificacionesHelper::notificarSolicitudSiniestro(
-                        $idGenerado,
-                        $cedulaCliente,
-                        $clienteNombre,
-                        $tipoIncidente,
-                        $agenteAsignado
-                    );
+                    if (class_exists('NotificacionesHelper')) {
+                        NotificacionesHelper::notificarSolicitudSiniestro(
+                            $idGenerado,
+                            $cedulaCliente,
+                            $clienteNombre,
+                            $tipoIncidente,
+                            $agenteAsignado
+                        );
+                    }
                 }
             }
             
@@ -373,18 +378,18 @@ class ModeloSolicitud {
                           INNER JOIN categoria_poliza cp ON sp.id_categoria = cp.id_categoria
                           WHERE sp.id_cliente = :idCliente';
 
-                 $sqlSiniestro = 'SELECT ss.id_solicitud, "siniestro" AS origen, "Siniestro" AS tipo,
+            $sqlSiniestro = 'SELECT ss.id_solicitud, "siniestro" AS origen, "Siniestro" AS tipo,
                              ss.fecha_creacion, ss.estado, ss.descripcion, NULL AS contacto_preferido,
                              cat.nombre AS categoria, tp.nombre AS ramo,
-                                    ss.cedula_agente_asignado,
-                                    ss.fecha_actualizacion,
-                                    ss.nota_interna,
-                                    ss.tipo_incidente, ss.fecha_incidente, ss.lugar_incidente,
+                             ss.cedula_agente_asignado,
+                             ss.fecha_actualizacion,
+                             ss.nota_interna,
+                             ss.tipo_incidente, ss.fecha_incidente, ss.lugar_incidente,
                              p.numero_poliza
                              FROM solicitud_siniestro ss
                              INNER JOIN poliza p ON ss.id_poliza = p.id_poliza
-                         INNER JOIN tipo_poliza tp ON p.id_tipo_poliza = tp.id_tipo_poliza
-                         INNER JOIN categoria_poliza cat ON tp.id_categoria = cat.id_categoria
+                             INNER JOIN tipo_poliza tp ON p.id_tipo_poliza = tp.id_tipo_poliza
+                             INNER JOIN categoria_poliza cat ON tp.id_categoria = cat.id_categoria
                              WHERE p.id_cliente = :idCliente';
 
             $stmtPoliza = $this->db->prepare($sqlPoliza);
@@ -459,9 +464,13 @@ class ModeloSolicitud {
             return [];
         }
         try {
-            $filtroAgente = '';
+            // CORRECCIÓN: Separar filtros para usar alias correctos (sp para poliza, ss para siniestro)
+            $filtroAgentePoliza = '';
+            $filtroAgenteSiniestro = '';
+            
             if (!$esAdmin && $cedulaAgente) {
-                $filtroAgente = ' AND sp.cedula_agente_asignado = :agente';
+                $filtroAgentePoliza = ' AND sp.cedula_agente_asignado = :agente';
+                $filtroAgenteSiniestro = ' AND ss.cedula_agente_asignado = :agente';
             }
 
             $sqlPoliza = 'SELECT sp.id_solicitud, "poliza" AS origen, sp.fecha_creacion, sp.estado,
@@ -471,21 +480,22 @@ class ModeloSolicitud {
                           FROM solicitud_poliza sp
                           INNER JOIN tipo_poliza tp ON sp.id_tipo_poliza = tp.id_tipo_poliza
                           INNER JOIN categoria_poliza cp ON sp.id_categoria = cp.id_categoria
-                          WHERE 1 = 1' . $filtroAgente;
+                          WHERE 1 = 1' . $filtroAgentePoliza;
 
-                 $sqlSiniestro = 'SELECT ss.id_solicitud, "siniestro" AS origen, ss.fecha_creacion, ss.estado,
+            $sqlSiniestro = 'SELECT ss.id_solicitud, "siniestro" AS origen, ss.fecha_creacion, ss.estado,
                              ss.descripcion, ss.tipo_incidente, ss.fecha_incidente,
                              ss.lugar_incidente, ss.cedula_agente_asignado, ss.fecha_actualizacion,
                              ss.nota_interna, p.id_cliente, p.numero_poliza, tp.nombre AS ramo
                              FROM solicitud_siniestro ss
                              INNER JOIN poliza p ON ss.id_poliza = p.id_poliza
                              INNER JOIN tipo_poliza tp ON p.id_tipo_poliza = tp.id_tipo_poliza
-                             WHERE 1 = 1' . $filtroAgente;
+                             WHERE 1 = 1' . $filtroAgenteSiniestro;
 
             $resultado = [];
 
+            // Ejecutar consulta Pólizas
             $stmtPoliza = $this->db->prepare($sqlPoliza);
-            if ($filtroAgente) {
+            if (!$esAdmin && $cedulaAgente) {
                 $stmtPoliza->bindParam(':agente', $cedulaAgente, PDO::PARAM_STR);
             }
             $stmtPoliza->execute();
@@ -513,8 +523,9 @@ class ModeloSolicitud {
                 ];
             }
 
+            // Ejecutar consulta Siniestros
             $stmtSiniestro = $this->db->prepare($sqlSiniestro);
-            if ($filtroAgente) {
+            if (!$esAdmin && $cedulaAgente) {
                 $stmtSiniestro->bindParam(':agente', $cedulaAgente, PDO::PARAM_STR);
             }
             $stmtSiniestro->execute();

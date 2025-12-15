@@ -38,17 +38,14 @@ switch ($accion) {
         $cedula = isset($_GET['cedula_agente']) ? $_GET['cedula_agente'] : null;
         if ($cedula) {
             $todos_permisos = $modeloPermiso->obtenerTodosLosPermisos();
-            $permisos_agente = $modeloPermiso->obtenerPermisosDeAgente($cedula);
+            $permisos_del_agente = $modeloPermiso->obtenerPermisosDeAgente($cedula);
 
-            if ($todos_permisos !== false && $permisos_agente !== false) {
-                // Combinamos la lista de todos los permisos con los que el agente ya tiene
-                $permisos_con_estado = array_map(function($permiso) use ($permisos_agente) {
-                    // Agregamos un campo 'activo' para saber si el checkbox debe estar marcado
-                    $permiso['activo'] = in_array($permiso['id_permiso'], $permisos_agente);
-                    return $permiso;
-                }, $todos_permisos);
-
-                $respuesta = ['estado' => 'exito', 'permisos' => $permisos_con_estado];
+            if ($todos_permisos !== false && $permisos_del_agente !== false) {
+                $respuesta = [
+                    'estado' => 'exito',
+                    'todos_los_permisos' => $todos_permisos,
+                    'permisos_del_agente' => $permisos_del_agente
+                ];
             } else {
                 $respuesta['mensaje'] = 'Error al consultar la base de datos.';
             }

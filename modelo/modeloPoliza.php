@@ -1,13 +1,17 @@
 <?php
 require_once dirname(__DIR__) . '/config/conexion.php';
+require_once dirname(__DIR__) . '/modelo/modeloNotificacion.php';
 
 class ModeloPoliza {
     private $db;
 
     public function __construct() {
         try {
+            // Inicializar la conexión a la base de datos primero
             $base_datos = new Base_Datos();
             $this->db = $base_datos->Conexion_Base_Datos();
+            // Inicializar dependencias
+            $this->modeloNotificacion = new ModeloNotificacion();
         } catch (Exception $e) {
             error_log('Error inicializando DB en ModeloPoliza: ' . $e->getMessage());
         }
@@ -413,6 +417,17 @@ class ModeloPoliza {
             }
 
             $this->db->commit();
+            // Notificar al agente asignado sobre la nueva póliza
+            if (!empty($cedulaAgente)) {
+                $titulo = "Nueva póliza asignada";
+                $mensaje = "Se te ha asignado la póliza $numeroPoliza";
+                $enlace = "index.php?vista=detallePoliza&numero=$numeroPoliza";
+                try {
+                    $this->modeloNotificacion->crearNotificacion($cedulaAgente, $titulo, $mensaje, 'info', $enlace);
+                } catch (Exception $e) {
+                    error_log('Error notificando agente al crear póliza: ' . $e->getMessage());
+                }
+            }
             return ['success' => true, 'id_poliza' => $id_poliza, 'numero_poliza' => $numeroPoliza];
         } catch (PDOException $e) {
             $this->db->rollBack();
@@ -471,6 +486,17 @@ class ModeloPoliza {
             $stmtDetalle->execute();
 
             $this->db->commit();
+            // Notificar al agente asignado sobre la nueva póliza (basica)
+            if (!empty($cedulaAgente)) {
+                $titulo = "Nueva póliza asignada";
+                $mensaje = "Se te ha asignado la póliza $numeroPoliza";
+                $enlace = "index.php?vista=detallePoliza&numero=$numeroPoliza";
+                try {
+                    $this->modeloNotificacion->crearNotificacion($cedulaAgente, $titulo, $mensaje, 'info', $enlace);
+                } catch (Exception $e) {
+                    error_log('Error notificando agente al crear póliza (basica): ' . $e->getMessage());
+                }
+            }
             return ['success' => true, 'message' => 'Póliza creada exitosamente.'];
         } catch (PDOException $e) {
             $this->db->rollBack();
@@ -598,6 +624,19 @@ class ModeloPoliza {
             $this->db->commit();
 
             $numero = $this->obtenerNumeroPoliza($id_poliza);
+
+            // Si el agente fue cambiado, notificar al nuevo agente
+            $nuevoAgente = $cedulaAgente;
+            if ($nuevoAgente && $nuevoAgente !== $prevAgente) {
+                $titulo = "Nueva póliza asignada";
+                $mensaje = "Se te ha asignado la póliza $numero";
+                $enlace = "index.php?vista=detallePoliza&numero=$numero";
+                try {
+                    $this->modeloNotificacion->crearNotificacion($nuevoAgente, $titulo, $mensaje, 'info', $enlace);
+                } catch (Exception $e) {
+                    error_log('Error notificando agente al actualizar póliza: ' . $e->getMessage());
+                }
+            }
             return ['success' => true, 'message' => 'Póliza actualizada correctamente', 'numero_poliza' => $numero];
         } catch (PDOException $e) {
             $this->db->rollBack();

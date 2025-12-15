@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: 127.0.0.1
--- Tiempo de generación: 15-12-2025 a las 01:35:28
+-- Tiempo de generación: 15-12-2025 a las 07:24:38
 -- Versión del servidor: 10.4.32-MariaDB
 -- Versión de PHP: 8.2.12
 
@@ -98,27 +98,25 @@ INSERT INTO `agente_permiso` (`cedula_agente`, `id_permiso`, `tiene_permiso`) VA
 ('V12345678', 17, 1),
 ('V12345678', 18, 1),
 ('V12345678', 19, 1),
-('V12345678', 20, 1),
-('V26260313', 1, 0),
+('V26260313', 1, 1),
 ('V26260313', 2, 0),
 ('V26260313', 3, 0),
 ('V26260313', 4, 0),
 ('V26260313', 5, 0),
-('V26260313', 6, 0),
+('V26260313', 6, 1),
 ('V26260313', 7, 0),
 ('V26260313', 8, 0),
 ('V26260313', 9, 0),
 ('V26260313', 10, 0),
-('V26260313', 11, 0),
+('V26260313', 11, 1),
 ('V26260313', 12, 0),
 ('V26260313', 13, 0),
 ('V26260313', 14, 0),
-('V26260313', 15, 0),
-('V26260313', 16, 0),
-('V26260313', 17, 0),
-('V26260313', 18, 0),
-('V26260313', 19, 1),
-('V26260313', 20, 1);
+('V26260313', 15, 1),
+('V26260313', 16, 1),
+('V26260313', 17, 1),
+('V26260313', 18, 1),
+('V26260313', 19, 1);
 
 -- --------------------------------------------------------
 
@@ -235,23 +233,6 @@ INSERT INTO `detalle_poliza` (`id_poliza`, `fecha_inicio`, `fecha_fin`, `monto_p
 -- --------------------------------------------------------
 
 --
--- Estructura de tabla para la tabla `notificacion`
---
-
-CREATE TABLE `notificacion` (
-  `id_notificacion` int(10) UNSIGNED NOT NULL,
-  `cedula_destino` varchar(20) NOT NULL,
-  `titulo` varchar(200) NOT NULL,
-  `mensaje` text NOT NULL,
-  `tipo` enum('info','warning','success','danger','primary') NOT NULL DEFAULT 'info',
-  `enlace` varchar(255) DEFAULT NULL,
-  `leida` tinyint(1) NOT NULL DEFAULT 0,
-  `fecha_creacion` timestamp NOT NULL DEFAULT current_timestamp()
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
-
--- --------------------------------------------------------
-
---
 -- Estructura de tabla para la tabla `permiso`
 --
 
@@ -284,8 +265,7 @@ INSERT INTO `permiso` (`id_permiso`, `nombre_permiso`, `descripcion`) VALUES
 (16, 'poliza_categoria_personas', 'Autoriza al agente a emitir pólizas de la categoría Personas.'),
 (17, 'poliza_categoria_automovil', 'Autoriza al agente a emitir pólizas de la categoría Automóvil.'),
 (18, 'poliza_categoria_patrimoniales', 'Autoriza al agente a emitir pólizas de la categoría Patrimoniales.'),
-(19, 'solicitud_gestionar', 'Coordinar solicitudes de pólizas y reportes de siniestros'),
-(20, 'solicitud_reasignar', 'Permite reasignar solicitudes a otros agentes o a sí mismo');
+(19, 'solicitud_gestionar', 'Coordinar solicitudes de pólizas y reportes de siniestros');
 
 -- --------------------------------------------------------
 
@@ -360,7 +340,7 @@ CREATE TABLE `poliza_cuota` (
 --
 
 INSERT INTO `poliza_cuota` (`id_cuota`, `id_poliza`, `numero_cuota`, `fecha_vencimiento`, `monto_programado`, `fecha_pago`, `monto_pagado`, `estado`) VALUES
-(12, 106, 1, '2025-12-10', 1000.00, NULL, 200.00, 'PENDIENTE'),
+(12, 106, 1, '2025-12-10', 1000.00, NULL, 300.00, 'PENDIENTE'),
 (13, 106, 2, '2026-01-10', 1000.00, NULL, NULL, 'PENDIENTE'),
 (14, 106, 3, '2026-02-10', 1000.00, NULL, NULL, 'PENDIENTE'),
 (15, 106, 4, '2026-03-10', 1000.00, NULL, NULL, 'PENDIENTE'),
@@ -393,7 +373,8 @@ CREATE TABLE `reporte_pago_cuota` (
 --
 
 INSERT INTO `reporte_pago_cuota` (`id_reporte`, `id_cuota`, `id_poliza`, `reportado_por`, `monto_reportado`, `referencia_pago`, `ruta_comprobante`, `nota_cliente`, `estado`, `motivo_rechazo`, `fecha_reporte`, `fecha_revision`, `revisado_por`) VALUES
-(1, 12, 106, 'V20000001', 200.00, '0234', 'assets/comprobantes_pagos/cmp_1765342264_274131717b.jpg', 'no pude pagal a tiempo peldon', 'APROBADO', NULL, '2025-12-10 04:51:04', '2025-12-10 04:52:41', 'V31843813');
+(1, 12, 106, 'V20000001', 200.00, '0234', 'assets/comprobantes_pagos/cmp_1765342264_274131717b.jpg', 'no pude pagal a tiempo peldon', 'APROBADO', NULL, '2025-12-10 04:51:04', '2025-12-10 04:52:41', 'V31843813'),
+(2, 12, 106, 'V20000001', 100.00, '0912', 'assets/comprobantes_pagos/cmp_1765777668_e99aa1cda0.png', 'hola', 'APROBADO', NULL, '2025-12-15 05:47:48', '2025-12-15 05:56:14', 'V26260313');
 
 -- --------------------------------------------------------
 
@@ -472,7 +453,7 @@ INSERT INTO `siniestro` (`id_siniestro`, `numero_siniestro`, `fecha_reporte`, `d
 (33, 'S-202509-P102-4', '2025-09-24 20:00:00', 'Siniestro prueba (mes -2) P102', 420.00, 'ABIERTO', 102, 'V12345678'),
 (34, 'S-202510-P103-4', '2025-10-05 14:10:00', 'Siniestro prueba (mes -1) P103', 980.00, 'ABIERTO', 103, 'V12345678'),
 (35, 'S-202510-P104-4', '2025-10-18 18:30:00', 'Siniestro prueba (mes -1) P104', 650.00, 'CERRADO', 104, 'V12345678'),
-(36, 'S-202511-P105-3', '2025-11-10 14:00:00', 'Siniestro prueba (mes 0) P105', 900.00, 'ABIERTO', 105, 'V12345678');
+(36, 'S-202511-P105-3', '2025-11-10 14:00:00', 'Siniestro prueba (mes 0) P105', 900.00, 'CERRADO', 105, 'V12345678');
 
 -- --------------------------------------------------------
 
@@ -481,7 +462,7 @@ INSERT INTO `siniestro` (`id_siniestro`, `numero_siniestro`, `fecha_reporte`, `d
 --
 
 CREATE TABLE `solicitud_poliza` (
-  `id_solicitud` int(10) UNSIGNED NOT NULL,
+  `id_solicitud` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
   `id_cliente` int(10) UNSIGNED NOT NULL,
   `cedula_cliente` varchar(20) NOT NULL,
   `id_categoria` int(10) UNSIGNED NOT NULL,
@@ -495,16 +476,16 @@ CREATE TABLE `solicitud_poliza` (
   `nota_interna` text DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+ALTER TABLE `solicitud_poliza` ADD PRIMARY KEY (`id_solicitud`);
+
 --
 -- Volcado de datos para la tabla `solicitud_poliza`
 --
 
 INSERT INTO `solicitud_poliza` (`id_solicitud`, `id_cliente`, `cedula_cliente`, `id_categoria`, `id_tipo_poliza`, `descripcion`, `contacto_preferido`, `estado`, `cedula_agente_asignado`, `fecha_creacion`, `fecha_actualizacion`, `nota_interna`) VALUES
-(1, 1, 'V20000001', 1, 1, 'Cobertura complementaria para viajes frecuentes.', 'juan.perez@example.com', 'EN_REVISION', 'V26260313', '2025-11-20 18:30:00', '2025-12-15 00:28:51', NULL),
-(2, 2, 'V20000002', 3, 6, 'Actualizar póliza de comercio con cobertura robo.', '0414-7654321', 'CONTACTADO', 'V12345678', '2025-11-25 13:10:00', '2025-12-15 00:33:55', 'Cliente contactado, espera cotización.'),
-(0, 1, 'V20000001', 3, 8, 'necesito un pocoe vainas, por ejemplo, mas amigos, que el dolar baje y que las clases terminen, pero por ahora me conformo con tener una poliza que cubra los gastos en caso de que mi casa se prenda candela oh no mi casa tiooo xdxdxdxd', '0412-1365498', 'EN_REVISION', 'V26260313', '2025-12-03 23:08:50', '2025-12-03 23:08:50', NULL),
-(0, 1, 'V20000001', 2, 5, 'Ejemplo', 'strb2006@gmail.com', 'EN_REVISION', 'V26260313', '2025-12-13 22:29:00', '2025-12-13 22:29:00', NULL),
-(0, 2, 'V20000002', 2, 5, 'as', 'sa', 'EN_REVISION', 'V12345678', '2025-12-15 00:34:32', '2025-12-15 00:34:32', NULL);
+(1, 1, 'V20000001', 1, 1, 'Cobertura complementaria para viajes frecuentes.', 'juan.perez@example.com', 'EN_REVISION', 'V26260313', '2025-11-20 18:30:00', '2025-12-15 06:01:21', NULL),
+(2, 2, 'V20000002', 3, 6, 'Actualizar póliza de comercio con cobertura robo.', '0414-7654321', 'CONTACTADO', 'V12345678', '2025-11-25 13:10:00', '2025-12-15 06:23:31', 'Cliente contactado, espera cotización.'),
+(3, 1, 'V20000001', 3, 8, 'necesito un pocoe vainas, por ejemplo, mas amigos, que el dolar baje y que las clases terminen, pero por ahora me conformo con tener una poliza que cubra los gastos en caso de que mi casa se prenda candela oh no mi casa tiooo xdxdxdxd', '0412-1365498', 'EN_REVISION', 'V26260313', '2025-12-03 23:08:50', '2025-12-03 23:08:50', NULL);
 
 -- --------------------------------------------------------
 
@@ -534,8 +515,7 @@ CREATE TABLE `solicitud_siniestro` (
 
 INSERT INTO `solicitud_siniestro` (`id_solicitud`, `id_poliza`, `cedula_cliente`, `tipo_incidente`, `descripcion`, `fecha_incidente`, `lugar_incidente`, `estado`, `cedula_agente_asignado`, `fecha_creacion`, `fecha_actualizacion`, `nota_interna`, `fecha_cita`) VALUES
 (1, 100, 'V20000001', 'Choque frontal leve', 'Cliente solicita evaluación de daños en parachoques.', '2025-11-18', 'Caracas - Av. Libertador', 'CITA_PENDIENTE', 'V12345678', '2025-11-19 19:45:00', '2025-12-03 23:46:38', 'Coordinar perito para el 22/11.', '2025-11-22 10:30:00'),
-(2, 105, 'V20000002', 'Daño por agua', 'Inundación parcial del local comercial tras lluvia.', '2025-11-22', 'Valencia - Av. Bolívar', 'CITA_PENDIENTE', 'V26260313', '2025-11-23 12:15:00', '2025-12-15 00:28:57', 'asa', NULL),
-(0, 101, 'V20000002', 'Colision Vehicular', 'Choque con una Moto', '2025-12-13', 'Barquisimeto', 'EN_REVISION', 'V12345678', '2025-12-14 00:50:24', '2025-12-14 00:50:24', NULL, NULL);
+(2, 105, 'V20000002', 'Daño por agua', 'Inundación parcial del local comercial tras lluvia.', '2025-11-22', 'Valencia - Av. Bolívar', 'EN_GESTION', 'V26260313', '2025-11-23 12:15:00', '2025-12-15 06:01:16', NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -607,7 +587,7 @@ INSERT INTO `usuario` (`cedula`, `email`, `password_hash`, `activo`, `id_rol`, `
 ('V12345678', 'agente@example.com', '$2y$10$cKK9.jeL.I0NNhAQzuBOXehgD1NPK/Kt52mHrfh4YZL0XNoFwTj3y', 1, 2, 'perfil_V12345678_1764683485.jpg'),
 ('V20000001', 'juan.perez@example.com', '$2y$10$0X84RacVPt9gcu1DwqcDBONznGMyoCHSNC2rZ3Oc4frVsXkcDyKHy', 1, 3, 'undraw_profile.svg'),
 ('V20000002', 'maria.gomez@example.com', '$2y$10$cIBvbEvDurW46YugpZYzDuOOhHJpdBYKnPN/V8k0zBKBPjVTmsJVK', 1, 3, 'undraw_profile.svg'),
-('V26260313', 'k4tam4ria@gmail.com', '$2y$10$JoiP4w0Kkryfe7XAUCd.xuFmBQS.Al8d6t6AIoK5xpKXhMWKaKpVu', 1, 2, 'undraw_profile.svg'),
+('V26260313', 'k4tam4ria@gmail.com', '$2y$10$rImTq/j3WcPAlovs4bWVSOE03S8VnLp62X3m5JLYkBo4QXoWcyFjm', 1, 2, 'undraw_profile.svg'),
 ('V31843813', 'admin@previsora.com', '$2y$10$a79Q3w6f9KuUDbL4j74xQOKxy5PQ6hFaHRCuAh2mwxKhN6VL.avja', 1, 1, 'perfil_V31843813_1764682914.jpg');
 
 --
@@ -666,17 +646,6 @@ ALTER TABLE `cobertura`
 --
 ALTER TABLE `detalle_poliza`
   ADD PRIMARY KEY (`id_poliza`);
-
---
--- Indices de la tabla `notificacion`
---
-ALTER TABLE `notificacion`
-  ADD PRIMARY KEY (`id_notificacion`),
-  ADD KEY `fk_notificacion_usuario` (`cedula_destino`),
-  ADD KEY `idx_cedula_destino` (`cedula_destino`),
-  ADD KEY `idx_leida` (`leida`),
-  ADD KEY `idx_fecha_creacion` (`fecha_creacion`),
-  ADD KEY `idx_tipo` (`tipo`);
 
 --
 -- Indices de la tabla `permiso`
@@ -789,16 +758,10 @@ ALTER TABLE `cobertura`
   MODIFY `id_cobertura` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
 
 --
--- AUTO_INCREMENT de la tabla `notificacion`
---
-ALTER TABLE `notificacion`
-  MODIFY `id_notificacion` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
-
---
 -- AUTO_INCREMENT de la tabla `permiso`
 --
 ALTER TABLE `permiso`
-  MODIFY `id_permiso` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=21;
+  MODIFY `id_permiso` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=20;
 
 --
 -- AUTO_INCREMENT de la tabla `poliza`
@@ -816,7 +779,7 @@ ALTER TABLE `poliza_cuota`
 -- AUTO_INCREMENT de la tabla `reporte_pago_cuota`
 --
 ALTER TABLE `reporte_pago_cuota`
-  MODIFY `id_reporte` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id_reporte` int(10) UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT de la tabla `rol`
@@ -876,12 +839,6 @@ ALTER TABLE `cliente`
 --
 ALTER TABLE `detalle_poliza`
   ADD CONSTRAINT `fk_detalle_poliza_poliza` FOREIGN KEY (`id_poliza`) REFERENCES `poliza` (`id_poliza`) ON DELETE CASCADE;
-
---
--- Filtros para la tabla `notificacion`
---
-ALTER TABLE `notificacion`
-  ADD CONSTRAINT `fk_notificacion_usuario` FOREIGN KEY (`cedula_destino`) REFERENCES `usuario` (`cedula`) ON DELETE CASCADE;
 
 --
 -- Filtros para la tabla `poliza`

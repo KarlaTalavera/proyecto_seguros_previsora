@@ -210,6 +210,45 @@ class modeloUsuario {
         }
     }
 
+    public function obtenerAgentesAsignables() {
+        if (!$this->db) {
+            error_log('Error: Conexión a DB no inicializada en el Modelo.');
+            return false;
+        }
+
+        $sql = "SELECT
+                    u.cedula,
+                    u.email,
+                    ag.nombre,
+                    ag.apellido
+                FROM
+                    usuario u
+                JOIN
+                    rol r ON u.id_rol = r.id_rol
+                JOIN
+                    agente ag ON u.cedula = ag.cedula_agente
+                JOIN
+                    agente_permiso ap ON u.cedula = ap.cedula_agente
+                JOIN
+                    permiso p ON ap.id_permiso = p.id_permiso
+                WHERE
+                    r.nombre_rol = 'agente'
+                    AND u.activo = 1
+                    AND p.nombre_permiso = 'solicitud_gestionar'
+                    AND ap.tiene_permiso = 1
+                ORDER BY
+                    ag.apellido, ag.nombre";
+
+        try {
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute();
+            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            error_log('Error de DB al obtener agentes asignables: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function existeCedula(string $cedula): bool {
         if (!$this->db) {
             return false;

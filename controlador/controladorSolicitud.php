@@ -1,6 +1,7 @@
 <?php
 require_once dirname(__DIR__) . '/modelo/modeloUsuario.php';
 require_once dirname(__DIR__) . '/modelo/modeloSolicitud.php';
+require_once dirname(__DIR__) . '/modelo/modeloPermiso.php';
 
 header('Content-Type: application/json');
 if (session_status() === PHP_SESSION_NONE) {
@@ -186,6 +187,22 @@ switch ($accion) {
     case 'listar_asignadas':
         $esAdmin = solicitud_esAdmin($usuarioActual);
         $esAgente = solicitud_esAgente($usuarioActual);
+        // Si el usuario es agente pero la sesión no tiene permisos cargados,
+        // obtenerlos desde la base de datos para evitar inconsistencias (p.ej. cambios recientes en DB).
+        if ($esAgente && (!isset($_SESSION['permisos_usuario']) || !is_array($_SESSION['permisos_usuario']) || empty($_SESSION['permisos_usuario']))) {
+            $ced = solicitud_obtenerCedula($usuarioActual);
+            if ($ced) {
+                try {
+                    $mp = new ModeloPermiso();
+                    $perms = $mp->obtenerNombresPermisosDeAgente($ced);
+                    if (is_array($perms)) {
+                        $_SESSION['permisos_usuario'] = $perms;
+                    }
+                } catch (Exception $e) {
+                    // no detener ejecución si falla la recarga
+                }
+            }
+        }
         if (!$esAdmin && (!$esAgente || !solicitud_agenteTienePermiso('solicitud_gestionar'))) {
             echo json_encode(['success' => false, 'message' => 'No tiene permisos para ver estas solicitudes.']);
             exit;

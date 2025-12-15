@@ -492,6 +492,82 @@ class ModeloReporte {
         }
     }
 
+    /**
+     * Balance de primas cobradas vs. siniestros pagados en los últimos $months meses
+     */
+    public function balancePrimasSiniestros(int $months = 12) {
+        if (!$this->db) return false;
+
+        $months = $months > 0 ? $months : 12;
+        $inicioPeriodo = (new DateTimeImmutable('first day of this month'))
+            ->modify('-' . ($months - 1) . ' months');
+        $fechaInicio = $inicioPeriodo->format('Y-m-d');
+
+        // Primas cobradas por mes
+        $sqlPrimas = "SELECT 
+                        DATE_FORMAT(fecha_pago, '%Y-%m') AS ym, 
+                        COALESCE(SUM(monto_pagado), 0) AS total_primas
+                      FROM poliza_cuota
+                      WHERE fecha_pago >= :fecha_inicio AND estado = 'PAGADO'
+                      GROUP BY ym";
+
+        // Siniestros pagados por mes
+        $sqlSiniestros = "SELECT 
+                            DATE_FORMAT(fecha_pago_indemnizacion, '%Y-%m') AS ym, 
+                            COALESCE(SUM(monto_pagado), 0) AS total_siniestros
+                          FROM siniestro
+                          WHERE fecha_pago_indemnizacion >= :fecha_inicio AND estado = 'CERRADO'
+                          GROUP BY ym";
+
+        try {
+            // Fetch primas
+            $stmtPrimas = $this->db->prepare($sqlPrimas);
+            $stmtPrimas->bindParam(':fecha_inicio', $fechaInicio);
+            $stmtPrimas->execute();
+            $primasRows = $stmtPrimas->fetchAll(PDO::FETCH_ASSOC);
+            $primasMap = [];
+            foreach ($primasRows as $r) {
+                $primasMap[$r['ym']] = (float)$r['total_primas'];
+            }
+
+            // Fetch siniestros
+            $stmtSiniestros = $this->db->prepare($sqlSiniestros);
+            $stmtSiniestros->bindParam(':fecha_inicio', $fechaInicio);
+            $stmtSiniestros->execute();
+            $siniestrosRows = $stmtSiniestros->fetchAll(PDO::FETCH_ASSOC);
+            $siniestrosMap = [];
+            foreach ($siniestrosRows as $r) {
+                $siniestrosMap[$r['ym']] = (float)$r['total_siniestros'];
+            }
+
+            // Generate final structure
+            $labels = [];
+            $dataPrimas = [];
+            $dataSiniestros = [];
+            $currentMonth = new DateTimeImmutable('first day of this month');
+            $iterator = $inicioPeriodo;
+            while ($iterator <= $currentMonth) {
+                $ym = $iterator->format('Y-m');
+                $labels[] = $iterator->format('M Y');
+                
+                $dataPrimas[] = $primasMap[$ym] ?? 0;
+                $dataSiniestros[] = $siniestrosMap[$ym] ?? 0;
+                
+                $iterator = $iterator->modify('+1 month');
+            }
+
+            return [
+                'labels' => $labels,
+                'data_primas' => $dataPrimas,
+                'data_siniestros' => $dataSiniestros
+            ];
+
+        } catch (PDOException $e) {
+            error_log('Error balancePrimasSiniestros: ' . $e->getMessage());
+            return false;
+        }
+    }
+
     public function Conexion_Base_Datos(array $data = null) {
         try {
             $base_datos = new Base_Datos();

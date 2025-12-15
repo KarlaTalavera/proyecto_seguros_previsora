@@ -166,6 +166,49 @@
     });
   }
 
+  // Configuración unificada de columnas.
+  // Usamos 'data' siempre para que DataTables sepa mapear los objetos JSON.
+  // Los renderers se ajustan para manejar strings (caso inicial DOM) y objetos (caso JSON).
+  const columnsUnified = [
+    { data: 'codigo' },
+    { data: 'cliente' },
+    { data: 'tipo' },
+    { data: 'resumen' },
+    { data: 'asignado' },
+    {
+      data: 'estado',
+      orderable: false,
+      render: function (data, type) {
+        // Si data es objeto (JSON {display, sort}), accedemos a sus props.
+        // Si es string (DOM inicial), retornamos el string.
+        if (data && typeof data === 'object') {
+          if (type === 'display') {
+            return data.display;
+          }
+          return data.sort;
+        }
+        return data;
+      }
+    },
+    {
+      data: 'actualizacion',
+      render: function (data, type) {
+        if (data && typeof data === 'object') {
+          if (type === 'display') {
+            return data.display;
+          }
+          return data.sort;
+        }
+        return data;
+      }
+    },
+    {
+      data: 'acciones',
+      orderable: false,
+      searchable: false
+    }
+  ];
+
   const tablaSolicitudes = $('#tablaSolicitudesGestion').DataTable({
     language: {
       url: '//cdn.datatables.net/plug-ins/1.10.21/i18n/Spanish.json'
@@ -179,37 +222,9 @@
     info: false,
     dom: '<"datatable-toolbar d-flex justify-content-end mb-3"f>rt',
     order: [[6, 'desc']],
-    columns: [
-      { data: 'codigo' },
-      { data: 'cliente' },
-      { data: 'tipo' },
-      { data: 'resumen' },
-      { data: 'asignado' },
-      {
-        data: 'estado',
-        orderable: false,
-        render: function (data, type) {
-          if (type === 'display') {
-            return data.display;
-          }
-          return data.sort;
-        }
-      },
-      {
-        data: 'actualizacion',
-        render: function (data, type) {
-          if (type === 'display') {
-            return data.display;
-          }
-          return data.sort;
-        }
-      },
-      {
-        data: 'acciones',
-        orderable: false,
-        searchable: false
-      }
-    ]
+    // Usamos SIEMPRE la configuración unificada que mapea propiedades (data: 'nombre').
+    // Esto previene el error 'unknown parameter 0' cuando se añaden objetos vía JS.
+    columns: columnsUnified
   });
 
   function aplicarFiltros(data) {

@@ -491,10 +491,17 @@ $(document).ready(function() {
 			data: { accion: 'obtener_permisos_agente', cedula_agente: cedula },
 			dataType: 'json',
 			success: function(respuesta) {
-				if (respuesta.estado === 'exito' && Array.isArray(respuesta.permisos) && respuesta.permisos.length > 0) {
-					const grupos = {};
+				if (respuesta.estado === 'exito' && Array.isArray(respuesta.todos_los_permisos)) {
+					const todosPermisos = respuesta.todos_los_permisos;
+					const permisosDelAgente = new Set((respuesta.permisos_del_agente || []).map(String));
+					
+					if (todosPermisos.length === 0) {
+						$('#listaPermisos').html('<p class="text-center">No hay permisos definidos en el sistema.</p>');
+						return;
+					}
 
-					respuesta.permisos.forEach(function(permiso) {
+					const grupos = {};
+					todosPermisos.forEach(function(permiso) {
 						const nombrePermiso = permiso.nombre_permiso || '';
 						const parts = nombrePermiso.split('_');
 						const grupo = parts[0] || 'general';
@@ -512,7 +519,7 @@ $(document).ready(function() {
 						html += '\n              <div class="col-md-6 mb-4">\n                <div class="card perm-group-card">\n                  <div class="card-header">' + formatGrupoLabel(nombreGrupo) + '</div>\n                  <div class="card-body">';
 
 						grupos[nombreGrupo].forEach(function(permiso) {
-							const isChecked = permiso.activo ? 'checked' : '';
+							const isChecked = permisosDelAgente.has(String(permiso.id_permiso)) ? 'checked' : '';
 							const label = formatPermisoLabel(permiso);
 							html += '\n                <div class="form-check perm-check">\n                  <input type="checkbox" class="form-check-input" name="permisos[]" value="' + permiso.id_permiso + '" id="perm-' + permiso.id_permiso + '" ' + isChecked + '>\n                  <label class="form-check-label w-100" for="perm-' + permiso.id_permiso + '">\n                    ' + label + '\n                  </label>\n                </div>';
 						});
@@ -521,8 +528,6 @@ $(document).ready(function() {
 					}
 					html += '\n            </div>';
 					$('#listaPermisos').html(html);
-				} else if (Array.isArray(respuesta.permisos) && respuesta.permisos.length === 0) {
-					$('#listaPermisos').html('<p class="text-center">No hay permisos definidos en el sistema.</p>');
 				} else {
 					$('#listaPermisos').html('<p class="text-danger text-center">Error: ' + (respuesta.mensaje || 'No fue posible cargar los permisos.') + '</p>');
 				}

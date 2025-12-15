@@ -38,7 +38,6 @@ $estadosSiniestro = [
     ['value' => 'EN_REVISION', 'label' => 'En revisión'],
     ['value' => 'CITA_PENDIENTE', 'label' => 'Cita pendiente'],
     ['value' => 'EN_GESTION', 'label' => 'En gestión'],
-    ['value' => 'ESCALADO', 'label' => 'Escalado'],
     ['value' => 'CERRADO', 'label' => 'Cerrado'],
     ['value' => 'CANCELADO', 'label' => 'Cancelado'],
 ];
@@ -51,24 +50,26 @@ $estadosConfig = [
 $agentesDisponibles = [];
 if ($esAdmin) {
     $modeloUsuario = new ModeloUsuario();
-    $usuarios = $modeloUsuario->obtenerTodosLosUsuarios();
-    if (is_array($usuarios)) {
-        foreach ($usuarios as $usuario) {
-            $rolUsuario = strtolower($usuario['nombre_rol'] ?? $usuario['rol'] ?? '');
-            $activo = isset($usuario['activo']) ? (int)$usuario['activo'] : 1;
-            if ($rolUsuario === 'agente' && $activo === 1) {
-                $nombre = trim(($usuario['nombre'] ?? '') . ' ' . ($usuario['apellido'] ?? ''));
-                $agentesDisponibles[] = [
-                    'cedula' => $usuario['cedula'] ?? '',
-                    'nombre' => $nombre !== '' ? $nombre : ($usuario['cedula'] ?? ''),
-                ];
-            }
+    $agentes = $modeloUsuario->obtenerAgentesAsignables();
+    if (is_array($agentes)) {
+        foreach ($agentes as $agente) {
+            $agentesDisponibles[] = [
+                'cedula' => $agente['cedula'] ?? '',
+                'nombre' => trim(($agente['nombre'] ?? '') . ' ' . ($agente['apellido'] ?? '')),
+            ];
         }
     }
 }
 
 $agentesJson = json_encode($agentesDisponibles, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 $estadosJson = json_encode($estadosConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+// Obtener cédula del usuario en sesión de forma segura (evitar dependencias a funciones de controlador)
+$cedulaSesion = '';
+if (is_object($usuarioActual) && method_exists($usuarioActual, 'getCedula')) {
+  $cedulaSesion = $usuarioActual->getCedula();
+} elseif (is_array($usuarioActual) && isset($usuarioActual['cedula'])) {
+  $cedulaSesion = $usuarioActual['cedula'];
+}
 ?>
 
 <div class="container-fluid">
@@ -120,10 +121,11 @@ $estadosJson = json_encode($estadosConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAP
     </div>
   </div>
 
-  <div class="card shadow-sm">
+      <div class="card shadow-sm">
     <div class="card-body">
       <div id="solicitudesAlert" class="mb-3"></div>
       <div class="table-responsive">
+        
         <table class="table table-striped table-hover" id="tablaSolicitudesGestion" width="100%">
           <thead class="thead-light">
             <tr>
@@ -137,7 +139,50 @@ $estadosJson = json_encode($estadosConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAP
               <th>Acciones</th>
             </tr>
           </thead>
-          <tbody></tbody>
+          <tbody>
+          <?php
+          // Renderizado server-side: obtener solicitudes asignadas y volcar filas HTML
+          require_once dirname(__DIR__) . '/modelo/modeloSolicitud.php';
+          $modeloSolicitud = new ModeloSolicitud();
+          $ced = trim((string)($cedulaSesion ?? '')) ?: null;
+          $filas = $modeloSolicitud->obtenerSolicitudesAsignadas($ced, $esAdmin);
+            if (!is_array($filas)) $filas = [];
+            // show count for debugging
+              if (empty($filas)) {
+                // Output one row with the same number of TDs as THs to avoid DataTables "Incorrect column count" warning
+                echo '<tr>';
+                echo '<td><em>No hay solicitudes devueltas por el modelo. Filas=0</em></td>';
+                // add empty cells to match header columns
+                for ($i = 0; $i < 7; $i++) echo '<td></td>';
+                echo '</tr>';
+              }
+            foreach ($filas as $item):
+              $codigo = ($item['origen'] === 'poliza' ? 'SP-' : 'SS-') . str_pad((string)$item['id'], 5, '0', STR_PAD_LEFT);
+              $cliente = htmlspecialchars($item['cliente'] ?? 'Desconocido', ENT_QUOTES, 'UTF-8');
+              $tipo = ($item['origen'] === 'poliza') ? 'Solicitud de póliza' : 'Reporte de siniestro';
+              $resumen = htmlspecialchars(mb_strimwidth($item['descripcion'] ?? ($item['tipo_incidente'] ?? ''), 0, 120, '...'), ENT_QUOTES, 'UTF-8');
+              $asignado = htmlspecialchars($item['asignado'] ?? 'Sin asignar', ENT_QUOTES, 'UTF-8');
+              $estado_label = htmlspecialchars($item['estado_label'] ?? $item['estado'] ?? '', ENT_QUOTES, 'UTF-8');
+              $fecha_raw = $item['fecha_actualizacion'] ?? $item['fecha'] ?? null;
+              $fecha_display = $fecha_raw ? date('d/m/Y H:i', strtotime($fecha_raw)) : '';
+              $origen = htmlspecialchars($item['origen'], ENT_QUOTES, 'UTF-8');
+              $id = (int)$item['id'];
+          ?>
+            <tr>
+              <td><?php echo $codigo; ?></td>
+              <td><?php echo $cliente; ?></td>
+              <td><?php echo $tipo; ?></td>
+              <td><?php echo $resumen; ?></td>
+              <td><?php echo $asignado; ?></td>
+              <td><?php echo $estado_label; ?></td>
+              <td><?php echo htmlspecialchars($fecha_display, ENT_QUOTES, 'UTF-8'); ?></td>
+              <td>
+                <a class="btn btn-sm btn-light" href="#" onclick="return false;">Ver</a>
+                <a class="btn btn-sm btn-secondary" href="#" onclick="return false;">Estado</a>
+              </td>
+            </tr>
+          <?php endforeach; ?>
+          </tbody>
         </table>
       </div>
     </div>
@@ -217,7 +262,7 @@ $estadosJson = json_encode($estadosConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAP
                   </option>
                 <?php endforeach; ?>
               <?php elseif ($esAgente): ?>
-                <option value="<?php echo htmlspecialchars(solicitud_obtenerCedula($usuarioActual), ENT_QUOTES, 'UTF-8'); ?>">
+                <option value="<?php echo htmlspecialchars($cedulaSesion, ENT_QUOTES, 'UTF-8'); ?>">
                   Mí mismo
                 </option>
               <?php endif; ?>

@@ -1,9 +1,19 @@
 <?php
-session_start();
-require_once dirname(__DIR__) . '/modelo/modeloNotificacion.php';
 require_once dirname(__DIR__) . '/modelo/modeloUsuario.php';
+require_once dirname(__DIR__) . '/modelo/modeloNotificacion.php';
+// Incluir definiciones de clases antes de iniciar la sesión para evitar errores
+// al unserializar objetos guardados en la sesión (p.ej. instancia de modeloUsuario).
+session_start();
 
-header('Content-Type: application/json');
+// Siempre devolver JSON
+header('Content-Type: application/json; charset=utf-8');
+
+// Buffer output para capturar warnings/notices que emitan HTML
+ob_start();
+
+set_error_handler(function($severity, $message, $file, $line) {
+    throw new ErrorException($message, 0, $severity, $file, $line);
+});
 
 $modeloNotificacion = new ModeloNotificacion();
 $modeloUsuario = new ModeloUsuario();
@@ -11,16 +21,18 @@ $modeloUsuario = new ModeloUsuario();
 $accion = $_REQUEST['accion'] ?? '';
 $respuesta = ['success' => false, 'message' => 'Acción no válida'];
 
-// Verificar sesión
-if (!isset($_SESSION['datos_usuario'])) {
-    echo json_encode(['success' => false, 'message' => 'No autenticado']);
-    exit;
-}
+try {
+    // Verificar sesión
+    if (!isset($_SESSION['datos_usuario'])) {
+        http_response_code(401);
+        $respuesta = ['success' => false, 'message' => 'No autenticado'];
+        throw new Exception('No autenticado');
+    }
 
-$usuario = $_SESSION['datos_usuario'];
-$cedulaUsuario = is_object($usuario) && method_exists($usuario, 'getCedula') ? $usuario->getCedula() : '';
+    $usuario = $_SESSION['datos_usuario'];
+    $cedulaUsuario = is_object($usuario) && method_exists($usuario, 'getCedula') ? $usuario->getCedula() : '';
 
-switch ($accion) {
+    switch ($accion) {
     case 'obtener_notificaciones':
         $soloNoLeidas = isset($_GET['solo_no_leidas']) ? filter_var($_GET['solo_no_leidas'], FILTER_VALIDATE_BOOLEAN) : false;
         $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : 10;
@@ -29,11 +41,19 @@ switch ($accion) {
         
         $resultado = $modeloNotificacion->obtenerNotificacionesUsuario($cedulaUsuario, $limit, $soloNoLeidas, $offset, $tipo);
         
-        // Formatear fechas y agregar iconos
-        foreach ($resultado['notificaciones'] as &$notif) {
-            $notif['fecha_formateada'] = time_elapsed_string($notif['fecha_creacion']);
-            $notif['icono'] = obtenerIconoTipo($notif['tipo']);
-            $notif['color'] = obtenerColorTipo($notif['tipo']);
+        // Formatear fechas y agregar iconos (proteger contra datos inesperados)
+        if (isset($resultado['notificaciones']) && is_array($resultado['notificaciones'])) {
+            foreach ($resultado['notificaciones'] as &$notif) {
+                try {
+                    $notif['fecha_formateada'] = !empty($notif['fecha_creacion']) ? time_elapsed_string($notif['fecha_creacion']) : '';
+                } catch (Throwable $e) {
+                    $notif['fecha_formateada'] = '';
+                    error_log('time_elapsed_string error for notif: ' . ($e->getMessage() ?? ''));
+                }
+                $notif['icono'] = isset($notif['tipo']) ? obtenerIconoTipo($notif['tipo']) : obtenerIconoTipo('info');
+                $notif['color'] = isset($notif['tipo']) ? obtenerColorTipo($notif['tipo']) : obtenerColorTipo('info');
+            }
+            unset($notif);
         }
         
         $respuesta = [
@@ -89,9 +109,41 @@ switch ($accion) {
     default:
         $respuesta['message'] = 'Acción no reconocida';
         break;
+    }
+} catch (Throwable $e) {
+    // Loguear error para debugging en server logs
+    error_log('controladorNotificacion error: ' . $e->getMessage() . " in " . $e->getFile() . ':' . $e->getLine());
+
+    // Recuperar contenido del buffer (warnings/notices) para ayudar a depurar
+    $bufferSnippet = '';
+    $buf = ob_get_clean();
+    if (!empty($buf)) {
+        $bufferSnippet = substr(strip_tags($buf), 0, 2000);
+        error_log('controladorNotificacion output buffer (on exception): ' . $bufferSnippet);
+    }
+
+    // Preserve explicit response codes (e.g. 401) set earlier; only set 500 if still 200
+    $currentCode = http_response_code();
+    if ($currentCode === 200 && !headers_sent()) {
+        http_response_code(500);
+    }
+
+    // En entorno local devolvemos detalle mínimo para depuración (quitar en producción si hace falta)
+    $respuesta = ['success' => false, 'message' => 'Error del servidor', 'debug' => $e->getMessage(), 'buffer' => $bufferSnippet];
+} finally {
+    // Si quedó contenido en el buffer, registrarlo y descartarlo
+    if (ob_get_level() > 0) {
+        $remaining = ob_get_clean();
+        if (!empty($remaining)) {
+            $snippet = substr(strip_tags($remaining), 0, 1000);
+            error_log('controladorNotificacion output buffer (finally): ' . $snippet);
+        }
+    }
+
+    echo json_encode($respuesta);
 }
 
-echo json_encode($respuesta);
+restore_error_handler();
 
 // Funciones auxiliares
 function time_elapsed_string($datetime, $full = false) {

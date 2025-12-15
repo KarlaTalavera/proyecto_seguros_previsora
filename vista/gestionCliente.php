@@ -349,13 +349,13 @@ $scriptBuffer = function () use ($dataTablesCss, $dataTablesCore, $dataTablesBoo
         const boton = $(this).find('button[type="submit"]');
         
         console.log("Datos a enviar para actualizar:", formData);
-        console.log("URL del controlador:", window.controladorUrl);
+        console.log("URL del controlador:", 'controlador/controladorCliente.php');
         
         boton.prop('disabled', true).text('Guardando...');
         $('#respuestaEditarCliente').hide().html('');
         
         $.ajax({
-            url: window.controladorUrl,
+          url: 'controlador/controladorCliente.php',
             type: 'POST',
             data: formData,
             dataType: 'json',
@@ -391,7 +391,7 @@ $scriptBuffer = function () use ($dataTablesCss, $dataTablesCore, $dataTablesBoo
             btn.prop('disabled', true);
             
             $.ajax({
-                url: window.controladorUrl,
+              url: 'controlador/controladorCliente.php',
                 type: 'POST',
                 data: {
                     accion: 'eliminar_cliente',

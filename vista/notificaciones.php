@@ -261,6 +261,8 @@ require_once dirname(__DIR__) . '/vista/parte_superior.php';
     </div>
 </div>
 
+<?php
+$extra_scripts = <<<'EOD'
 <script>
 $(document).ready(function() {
     // Marcar notificación como leída
@@ -269,7 +271,7 @@ $(document).ready(function() {
         var idNotificacion = boton.data('id');
         
         $.ajax({
-            url: 'controladores/controladorNotificacion.php',
+            url: 'controlador/controladorNotificacion.php',
             method: 'POST',
             data: {
                 accion: 'marcar_leida',
@@ -288,6 +290,9 @@ $(document).ready(function() {
                         window.sistemaNotificaciones.cargarNotificaciones();
                     }
                 }
+            },
+            error: function(xhr, status, error) {
+                console.error('Error marcando notificacion como leida:', xhr.status, xhr.responseText || error);
             }
         });
     });
@@ -300,6 +305,8 @@ $(document).ready(function() {
     }, 60000);
 });
 </script>
+EOD;
+?>
 
 <style>
 .notificacion-item {

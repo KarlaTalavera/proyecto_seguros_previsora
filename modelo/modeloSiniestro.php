@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/config/conexion.php';
+require_once dirname(__DIR__) . '/modelo/modeloNotificacion.php';
 
 class ModeloSiniestro {
     private $db;
@@ -8,6 +9,7 @@ class ModeloSiniestro {
         try {
             $base_datos = new Base_Datos();
             $this->db = $base_datos->Conexion_Base_Datos();
+            $this->modeloNotificacion = new ModeloNotificacion();
         } catch (\Exception $e) {
             error_log("Error al inicializar la conexión en ModeloSiniestro: " . $e->getMessage());
             $this->db = null;
@@ -155,6 +157,17 @@ class ModeloSiniestro {
             $stmt->execute();
             
             $id_siniestro = $this->db->lastInsertId();
+            // Notificar al agente asignado sobre el nuevo siniestro
+            if (!empty($cedula_agente) && $id_siniestro) {
+                $titulo = "Nuevo siniestro asignado";
+                $mensaje = "Se te ha asignado el siniestro $numero_siniestro";
+                $enlace = "index.php?vista=detalleSiniestro&id=$id_siniestro";
+                try {
+                    $this->modeloNotificacion->crearNotificacion($cedula_agente, $titulo, $mensaje, 'warning', $enlace);
+                } catch (\Exception $e) {
+                    error_log('Error notificando agente al crear siniestro: ' . $e->getMessage());
+                }
+            }
             
             return [
                 'success' => true, 

@@ -45,6 +45,10 @@ class ReporteDashboardExporter
         $datos['polizasPorVencer'] = $this->modelo->polizasPorVencer(30, $cedulaAgente) ?: [];
         $datos['polizasPorEstado'] = $this->modelo->polizasPorEstado($cedulaAgente) ?: [];
         $datos['rankingProductividad'] = $this->modelo->rankingProductividad(12, $cedulaAgente, 10) ?: [];
+        
+        if ($esAdmin) {
+            $datos['balancePrimasSiniestros'] = $this->modelo->balancePrimasSiniestros(12) ?: ['labels' => [], 'data_primas' => [], 'data_siniestros' => []];
+        }
 
         return $datos;
     }
@@ -218,6 +222,7 @@ class ReporteDashboardExporter
             'polizasPorEstado' => $this->chartUrlPolizasPorEstado($datos['polizasPorEstado'] ?? []),
             'rankingProductividad' => $this->chartUrlRanking($datos['rankingProductividad'] ?? []),
             'tendenciaSiniestros' => $this->chartUrlSiniestros($datos['tendenciaSiniestros'] ?? ['labels' => [], 'data' => []]),
+            'balancePrimasSiniestros' => isset($datos['balancePrimasSiniestros']) ? $this->chartUrlBalance($datos['balancePrimasSiniestros']) : null,
         ];
     }
 
@@ -371,6 +376,48 @@ class ReporteDashboardExporter
         return $this->crearUrlQuickChart($config);
     }
 
+    private function chartUrlBalance(array $data): ?string
+    {
+        if (empty($data['labels']) || (empty($data['data_primas']) && empty($data['data_siniestros']))) {
+            return null;
+        }
+        
+        $primas = array_map('floatval', $data['data_primas'] ?? []);
+        $siniestros = array_map('floatval', $data['data_siniestros'] ?? []);
+
+        if (!array_sum($primas) && !array_sum($siniestros)) {
+            return null;
+        }
+
+        $config = [
+            'type' => 'line',
+            'data' => [
+                'labels' => $data['labels'],
+                'datasets' => [
+                    [
+                        'label' => 'Primas Cobradas',
+                        'data' => $primas,
+                        'fill' => false,
+                        'borderColor' => '#28a745', // Verde
+                        'tension' => 0.35,
+                    ],
+                    [
+                        'label' => 'Siniestros Pagados',
+                        'data' => $siniestros,
+                        'fill' => false,
+                        'borderColor' => '#dc3545', // Rojo
+                        'tension' => 0.35,
+                    ]
+                ],
+            ],
+            'options' => [
+                'plugins' => ['legend' => ['position' => 'top']],
+                'scales' => ['y' => ['beginAtZero' => true]],
+            ],
+        ];
+        return $this->crearUrlQuickChart($config, 800, 450);
+    }
+
     private function crearUrlQuickChart(array $config, int $width = 700, int $height = 380, ?string $version = null): ?string
     {
         $json = json_encode($config);
@@ -497,6 +544,34 @@ class ReporteDashboardExporter
                 }
                 $infoBase['chartUrl'] = $this->chartUrlSiniestros(['labels' => $labels, 'data' => $values]);
                 $infoBase['emptyMessage'] = 'Sin registros de siniestros en el periodo seleccionado.';
+                break;
+
+            case 'balance':
+                $data = $datosDashboard['balancePrimasSiniestros'] ?? [];
+                $labels = $data['labels'] ?? [];
+                $primas = $data['data_primas'] ?? [];
+                $siniestros = $data['data_siniestros'] ?? [];
+                
+                $infoBase['titulo'] = 'Balance de Primas vs. Siniestros (últimos 12 meses)';
+                $infoBase['descripcion'] = 'Comparativo mensual de primas cobradas contra siniestros pagados.';
+                $infoBase['headers'] = ['Mes', 'Primas Cobradas', 'Siniestros Pagados', 'Balance'];
+                
+                foreach ($labels as $idx => $label) {
+                    $prima = (float)($primas[$idx] ?? 0);
+                    $siniestro = (float)($siniestros[$idx] ?? 0);
+                    $balance = $prima - $siniestro;
+                    
+                    $infoBase['rows'][] = [
+                        $label,
+                        number_format($prima, 2, ',', '.'),
+                        number_format($siniestro, 2, ',', '.'),
+                        number_format($balance, 2, ',', '.')
+                    ];
+                    $infoBase['rawRows'][] = [$label, $prima, $siniestro, $balance];
+                }
+                
+                $infoBase['chartUrl'] = $this->chartUrlBalance($data);
+                $infoBase['emptyMessage'] = 'No hay datos de primas o siniestros para generar el balance.';
                 break;
 
             default:

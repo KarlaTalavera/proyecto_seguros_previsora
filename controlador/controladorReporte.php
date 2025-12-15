@@ -277,9 +277,14 @@ switch ($accion) {
     case 'exportar_grafico':
         $grafico = strtolower(trim((string)($_GET['grafico'] ?? $_POST['grafico'] ?? '')));
         $formato = strtolower((string)($_GET['formato'] ?? $_POST['formato'] ?? 'pdf'));
-        $graficasPermitidas = ['categoria', 'ramo', 'estado', 'ranking', 'siniestros'];
+        $graficasPermitidas = ['categoria', 'ramo', 'estado', 'ranking', 'siniestros', 'balance'];
         $aliasGrafico = ['ramo' => 'categoria'];
         $graficoInterno = $aliasGrafico[$grafico] ?? $grafico;
+
+        // Seguridad: El reporte de balance es solo para administradores.
+        if ($graficoInterno === 'balance' && !controladorReporte_esAdmin($usuario)) {
+            controladorReporte_denegarPermiso();
+        }
 
         if (!in_array($grafico, $graficasPermitidas, true)) {
             $response = ['success' => false, 'message' => 'Gráfica no soportada.'];

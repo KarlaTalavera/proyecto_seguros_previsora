@@ -118,30 +118,25 @@ class ModeloPermiso {
     public function actualizarPermisosDeAgente($cedula_agente, array $permisos_activos) {
         if (!$this->db) return false;
 
-        $this->db->beginTransaction();
         try {
-            // Primero, obtenemos la lista completa de posibles permisos
-            $todos_los_permisos = $this->obtenerTodosLosPermisos();
-            if ($todos_los_permisos === false) {
-                $this->db->rollBack();
-                return false;
-            }
+            $this->db->beginTransaction();
 
-            $sql = "INSERT INTO agente_permiso (cedula_agente, id_permiso, tiene_permiso) 
-                    VALUES (:cedula_agente, :id_permiso, :tiene_permiso)
-                    ON DUPLICATE KEY UPDATE tiene_permiso = VALUES(tiene_permiso)";
-            
-            $stmt = $this->db->prepare($sql);
+            // 1. Borrar todos los permisos existentes para este agente.
+            $sql_delete = "DELETE FROM agente_permiso WHERE cedula_agente = :cedula_agente";
+            $stmt_delete = $this->db->prepare($sql_delete);
+            $stmt_delete->bindParam(':cedula_agente', $cedula_agente);
+            $stmt_delete->execute();
 
-            foreach ($todos_los_permisos as $permiso) {
-                $id_permiso = $permiso['id_permiso'];
-                // Verificamos si el permiso está en la lista de activos que nos pasaron
-                $tiene_permiso = in_array($id_permiso, $permisos_activos) ? 1 : 0;
+            // 2. Insertar solo los permisos que vienen activos desde la UI.
+            if (!empty($permisos_activos)) {
+                $sql_insert = "INSERT INTO agente_permiso (cedula_agente, id_permiso, tiene_permiso) VALUES (:cedula_agente, :id_permiso, 1)";
+                $stmt_insert = $this->db->prepare($sql_insert);
 
-                $stmt->bindParam(':cedula_agente', $cedula_agente);
-                $stmt->bindParam(':id_permiso', $id_permiso, PDO::PARAM_INT);
-                $stmt->bindParam(':tiene_permiso', $tiene_permiso, PDO::PARAM_INT);
-                $stmt->execute();
+                foreach ($permisos_activos as $id_permiso) {
+                    $stmt_insert->bindParam(':cedula_agente', $cedula_agente);
+                    $stmt_insert->bindParam(':id_permiso', $id_permiso, PDO::PARAM_INT);
+                    $stmt_insert->execute();
+                }
             }
 
             $this->db->commit();
@@ -149,7 +144,7 @@ class ModeloPermiso {
 
         } catch (\PDOException $e) {
             $this->db->rollBack();
-            error_log("Error de DB al actualizar permisos: " . $e->getMessage());
+            error_log("Error de DB al actualizar permisos (nuevo método): " . $e->getMessage());
             return false;
         }
     }
