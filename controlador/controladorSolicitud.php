@@ -224,17 +224,42 @@ switch ($accion) {
             echo json_encode(['success' => false, 'message' => 'Método no permitido.']);
             exit;
         }
-        if (!solicitud_esAdmin($usuarioActual)) {
-            echo json_encode(['success' => false, 'message' => 'Solo un administrador puede reasignar solicitudes.']);
+        
+        // Verificar que sea administrador O agente con permiso de reasignación
+        $esAdmin = solicitud_esAdmin($usuarioActual);
+        $esAgente = solicitud_esAgente($usuarioActual);
+        $tienePermisoReasignar = $esAdmin || 
+            ($esAgente && solicitud_agenteTienePermiso('solicitud_reasignar'));
+        
+        if (!$tienePermisoReasignar) {
+            echo json_encode(['success' => false, 'message' => 'No tiene permisos para reasignar solicitudes.']);
             exit;
         }
+        
         $origen = $_POST['origen'] ?? '';
         $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
         $cedulaAgente = isset($_POST['cedula_agente']) ? trim((string)$_POST['cedula_agente']) : '';
-        if (!in_array($origen, ['poliza', 'siniestro'], true) || $id <= 0 || $cedulaAgente === '') {
+        
+        if (!in_array($origen, ['poliza', 'siniestro'], true) || $id <= 0) {
             echo json_encode(['success' => false, 'message' => 'Datos incompletos para la asignación.']);
             exit;
         }
+        
+        // Validar que se seleccionó un agente (puede ser vacío para desasignar)
+        if ($cedulaAgente === '') {
+            echo json_encode(['success' => false, 'message' => 'Debe seleccionar un agente válido.']);
+            exit;
+        }
+        
+        // Si es agente, solo puede reasignar a sí mismo
+        if ($esAgente && !$esAdmin) {
+            $cedulaActual = solicitud_obtenerCedula($usuarioActual);
+            if ($cedulaAgente !== $cedulaActual) {
+                echo json_encode(['success' => false, 'message' => 'Solo puede reasignar solicitudes a su propia cuenta.']);
+                exit;
+            }
+        }
+        
         $resultado = $modelo->asignarSolicitudAgente($origen, $id, $cedulaAgente);
         echo json_encode($resultado);
         break;

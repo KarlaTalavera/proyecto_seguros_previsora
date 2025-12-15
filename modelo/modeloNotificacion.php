@@ -15,14 +15,28 @@ class ModeloNotificacion {
     }
 
     public function crearNotificacion($cedulaDestino, $titulo, $mensaje, $tipo = 'info', $enlace = null) {
-        if (!$this->db) return false;
+        if (!$this->db) {
+            error_log("Error: Base de datos no disponible para crear notificación");
+            return false;
+        }
+        
         try {
             $sql = "INSERT INTO notificacion (cedula_destino, titulo, mensaje, tipo, enlace, leida, fecha_creacion)
                     VALUES (?, ?, ?, ?, ?, 0, NOW())";
             $stmt = $this->db->prepare($sql);
-            return $stmt->execute([$cedulaDestino, $titulo, $mensaje, $tipo, $enlace]);
+            $resultado = $stmt->execute([$cedulaDestino, $titulo, $mensaje, $tipo, $enlace]);
+            
+            if ($resultado) {
+                error_log("Notificación creada exitosamente para: $cedulaDestino - $titulo");
+            } else {
+                error_log("Error al ejecutar statement para notificación: $cedulaDestino");
+            }
+            
+            return $resultado;
         } catch (Exception $e) {
-            error_log("Error al crear notificación: " . $e->getMessage());
+            error_log("Error al crear notificación para $cedulaDestino: " . $e->getMessage());
+            error_log("SQL: $sql");
+            error_log("Parámetros: " . json_encode([$cedulaDestino, $titulo, $mensaje, $tipo, $enlace]));
             return false;
         }
     }

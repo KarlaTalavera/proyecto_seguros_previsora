@@ -212,10 +212,23 @@ $estadosJson = json_encode($estadosConfig, JSON_UNESCAPED_UNICODE | JSON_UNESCAP
               <option value="">Selecciona un agente</option>
               <?php if ($esAdmin): ?>
                 <?php foreach ($agentesDisponibles as $agente): ?>
-                  <option value="<?php echo htmlspecialchars($agente['cedula'], ENT_QUOTES, 'UTF-8'); ?>"><?php echo htmlspecialchars($agente['nombre'], ENT_QUOTES, 'UTF-8'); ?></option>
+                  <option value="<?php echo htmlspecialchars($agente['cedula'], ENT_QUOTES, 'UTF-8'); ?>">
+                    <?php echo htmlspecialchars($agente['nombre'], ENT_QUOTES, 'UTF-8'); ?>
+                  </option>
                 <?php endforeach; ?>
+              <?php elseif ($esAgente): ?>
+                <option value="<?php echo htmlspecialchars(solicitud_obtenerCedula($usuarioActual), ENT_QUOTES, 'UTF-8'); ?>">
+                  Mí mismo
+                </option>
               <?php endif; ?>
             </select>
+            <small class="form-text text-muted">
+              <?php if ($esAdmin): ?>
+                Selecciona el agente que gestionará esta solicitud
+              <?php elseif ($esAgente): ?>
+                Solo puedes asignar solicitudes a tu propia cuenta
+              <?php endif; ?>
+            </small>
           </div>
         </form>
       </div>
